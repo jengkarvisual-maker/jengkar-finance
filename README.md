@@ -140,6 +140,7 @@ npm run dev
 Lihat `.env.example`:
 
 - `DATABASE_URL`
+- `DIRECT_URL`
 - `SESSION_SECRET`
 - `APP_URL`
 - `DEFAULT_TIMEZONE`
@@ -169,5 +170,6 @@ Endpoint yang tersedia:
 ## Catatan Implementasi
 
 - Lampiran `Attachment` sudah disiapkan pada schema, tetapi upload file fisik belum saya surface ke UI agar local-first setup tetap sederhana.
+- Jika memakai Supabase transaction pooler `:6543`, pastikan `DATABASE_URL` memakai `?pgbouncer=true` dan `DIRECT_URL` diarahkan ke koneksi direct `:5432`.
 - Environment kerja saat penyusunan ini belum memiliki `node` dan `npm`, jadi install dependency, migration SQL generated file, dan runtime verification belum bisa dieksekusi dari session ini.
 - Setelah Node tersedia, langkah terpenting berikutnya adalah menjalankan `npm install`, `npm run db:migrate`, `npm run db:seed`, lalu `npm run dev`.
