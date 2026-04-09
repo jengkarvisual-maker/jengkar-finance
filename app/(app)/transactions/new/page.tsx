@@ -10,7 +10,7 @@ export default async function NewTransactionPage() {
   const user = await requireUser();
   const [master, invoices, vendorBills, projects] = await Promise.all([
     getMasterDataOptions(user),
-    listInvoices(user, {}),
+    listInvoices(user, { take: 50 }),
     listVendorBills(user, {}),
     listProjects(user, {}),
   ]);
