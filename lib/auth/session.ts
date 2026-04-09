@@ -89,11 +89,13 @@ export async function getCurrentSession() {
     });
 
     if (!user || user.status !== "ACTIVE") {
+      await cookieStore.delete(SESSION_COOKIE); // 🔥 FIX
       return null;
     }
 
     return user as SessionUser;
-  } catch {
+  } catch (error) {
+    await cookieStore.delete(SESSION_COOKIE); // 🔥 FIX PALING PENTING
     return null;
   }
 }
