@@ -3,14 +3,12 @@ import Link from "next/link";
 import { deleteInvoiceAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
-import { toOptions } from "@/lib/options";
 import { readFilters } from "@/lib/search-params";
 import { listInvoices } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { DeleteButton } from "@/components/shared/delete-button";
 import { PageHeader } from "@/components/shared/page-header";
-import { QueryFilters } from "@/components/shared/query-filters";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,15 +33,12 @@ export default async function ReceivablesPage({
   const rawSearchParams = await searchParams;
   const filters = readFilters(rawSearchParams);
 
-  const defaultValues: Record<string, string | undefined> = {
-    brandId: getSingleValue(rawSearchParams.brandId),
-    projectId: getSingleValue(rawSearchParams.projectId),
-    accountCategory: getSingleValue(rawSearchParams.accountCategory),
-    from: getSingleValue(rawSearchParams.from),
-    to: getSingleValue(rawSearchParams.to),
-    month: getSingleValue(rawSearchParams.month),
-    pageSize: getSingleValue(rawSearchParams.pageSize),
-    status: getSingleValue(rawSearchParams.status),
+  const defaultValues = {
+    q: getSingleValue(rawSearchParams.q) ?? "",
+    brandId: getSingleValue(rawSearchParams.brandId) ?? "",
+    from: getSingleValue(rawSearchParams.from) ?? "",
+    to: getSingleValue(rawSearchParams.to) ?? "",
+    status: getSingleValue(rawSearchParams.status) ?? "",
   };
 
   const [master, receivables] = await Promise.all([
@@ -69,14 +64,60 @@ export default async function ReceivablesPage({
         }
       />
 
-      <QueryFilters
-        brandOptions={toOptions(master.brands, (item) => item.id, (item) => item.name)}
-        statusOptions={INVOICE_STATUS_OPTIONS.map((item) => ({
-          label: item.label,
-          value: item.value,
-        }))}
-        defaultValues={defaultValues}
-      />
+      <form
+        method="GET"
+        className="mb-6 flex flex-wrap items-center gap-3 rounded-3xl border border-border/70 bg-white/75 p-4"
+      >
+        <input
+          type="text"
+          name="q"
+          defaultValue={defaultValues.q}
+          placeholder="Cari nomor, deskripsi, client, vendor, atau project"
+          className="min-w-[260px] flex-1 rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
+        />
+
+        <select
+          name="brandId"
+          defaultValue={defaultValues.brandId}
+          className="min-w-[180px] rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
+        >
+          <option value="">Semua brand</option>
+          {master.brands.map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="date"
+          name="from"
+          defaultValue={defaultValues.from}
+          className="rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
+        />
+
+        <input
+          type="date"
+          name="to"
+          defaultValue={defaultValues.to}
+          className="rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
+        />
+
+        <select
+          name="status"
+          defaultValue={defaultValues.status}
+          className="min-w-[220px] rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
+        >
+          <option value="">Semua status pembayaran</option>
+          {INVOICE_STATUS_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+
+        <Button type="submit">Terapkan</Button>
+      </form>
 
       <Table>
         <TableHeader>
@@ -93,7 +134,6 @@ export default async function ReceivablesPage({
             <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
-
         <TableBody>
           {receivables.rows.map((row) => (
             <TableRow key={row.id}>
@@ -120,11 +160,9 @@ export default async function ReceivablesPage({
                   <Button asChild size="sm" variant="secondary">
                     <Link href={`/receivables/${row.id}`}>Detail</Link>
                   </Button>
-
                   <Button asChild size="sm" variant="outline">
                     <Link href={`/receivables/${row.id}/edit`}>Edit</Link>
                   </Button>
-
                   <DeleteButton action={deleteInvoiceAction} id={row.id} />
                 </div>
               </TableCell>

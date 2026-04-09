@@ -148,7 +148,7 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
         return acc;
       }
 
-      const key = tx.category.name;
+      const key = tx.category?.name ?? "Tanpa Kategori";
       acc[key] = (acc[key] ?? 0) + amountOut;
       return acc;
     },
