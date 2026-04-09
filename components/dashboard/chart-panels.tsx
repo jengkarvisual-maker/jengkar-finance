@@ -97,7 +97,7 @@ export function TrendLineChart({
       </CardHeader>
 
       <CardContent className="h-[320px] pt-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid stroke="#E6DFC9" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -155,7 +155,7 @@ export function BrandBarChart({
       </CardHeader>
 
       <CardContent className="h-[320px] pt-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
             <CartesianGrid stroke="#E6DFC9" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -190,7 +190,7 @@ export function CompositionPieChart({
       </CardHeader>
 
       <CardContent className="h-[320px] pt-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
               data={data}
