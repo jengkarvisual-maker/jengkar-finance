@@ -16,19 +16,22 @@ export function LoginForm() {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const isProduction = process.env.NODE_ENV === "production";
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "owner@rumahjengkar.id",
-      password: "Jengkar123!",
+      email: "",
+      password: "",
     },
   });
 
   const helperText = useMemo(
     () =>
-      "Seed default menggunakan akun owner, admin, dan finance staff. Kamu bisa ganti nilainya setelah login pertama.",
-    [],
+      isProduction
+        ? "Gunakan email dan password internal yang diberikan khusus untuk tim Rumah Jengkar."
+        : "Gunakan akun internal. Untuk environment dev, akun seed owner, admin, dan finance staff tersedia di README.",
+    [isProduction],
   );
 
   const onSubmit = form.handleSubmit((values) => {

@@ -98,6 +98,8 @@ Setelah menjalankan seed, login default:
 - `admin@rumahjengkar.id` / `Jengkar123!`
 - `finance@rumahjengkar.id` / `Jengkar123!`
 
+Untuk production, jangan biarkan password default ini tetap aktif. Ganti password semua akun seed atau buat akun baru khusus tim internal.
+
 ## Setup Local
 
 1. Install Node.js 20+ atau 22+.
@@ -144,6 +146,32 @@ Lihat `.env.example`:
 - `SESSION_SECRET`
 - `APP_URL`
 - `DEFAULT_TIMEZONE`
+
+Untuk production:
+
+- set `APP_URL` ke domain publik final, misalnya `https://jengkar-finance-nine.vercel.app` atau custom domain Anda
+- gunakan `SESSION_SECRET` acak yang panjang
+- pastikan `DATABASE_URL` dan `DIRECT_URL` mengarah ke database production
+
+## Go Live
+
+Pilihan termudah agar aplikasi bisa diakses dari mana saja adalah deploy ke Vercel:
+
+1. push branch `main` ke GitHub repository yang terhubung ke Vercel
+2. isi environment variables production di Vercel:
+   - `DATABASE_URL`
+   - `DIRECT_URL`
+   - `SESSION_SECRET`
+   - `APP_URL`
+   - `DEFAULT_TIMEZONE`
+3. deploy project dan akses domain Vercel atau custom domain
+4. login memakai akun internal, lalu ubah password default seed
+
+Catatan production:
+
+- halaman login tidak lagi mengisi otomatis kredensial seed
+- metadata dan response headers sekarang diberi `noindex` agar aplikasi internal tidak diindeks mesin pencari
+- tersedia halaman `Print / Save PDF` untuk invoice agar operasional tidak bergantung penuh pada PDF server-side
 
 ## Business Rules Yang Sudah Diimplementasikan
 

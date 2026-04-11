@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 
-import { prisma } from "@/lib/prisma";
+import { getCurrentSession } from "@/lib/auth/session";
+import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const user = await getCurrentSession();
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
-      include: {
-        brand: true,
-        client: true,
-        project: true,
-        transactions: {
-          orderBy: { transactionDate: "asc" },
-        },
-      },
-    });
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const invoice = await getInvoiceById(user, id);
 
     if (!invoice) {
       return new NextResponse("Invoice tidak ditemukan.", { status: 404 });
@@ -280,6 +280,11 @@ export async function GET(
     }
   } catch (error) {
     console.error("PDF ROUTE ERROR:", error);
+    if (error instanceof Error && error.message.includes("akses")) {
+      return new NextResponse("Kamu tidak punya akses ke invoice ini.", {
+        status: 403,
+      });
+    }
     return new NextResponse("Gagal membuat PDF.", { status: 500 });
   }
 }
