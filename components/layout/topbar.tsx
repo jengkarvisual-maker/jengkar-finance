@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, LogOut, Search } from "lucide-react";
+import { CalendarDays, KeyRound, LogOut, Search } from "lucide-react";
 
 import { logoutAction } from "@/lib/actions/auth";
 import type { SessionUser } from "@/lib/permissions";
@@ -15,9 +15,7 @@ export function Topbar({ user }: TopbarProps) {
   const accessibleBrands = user.allBrandsAccess
     ? "Semua brand"
     : `${user.brandAccesses.length} brand`;
-  const profileHref = ["OWNER", "ADMIN"].includes(user.role.key)
-    ? "/master/users"
-    : "/dashboard";
+  const profileHref = "/account/security";
 
   return (
     <header className="glass-panel sticky top-0 z-30 border-b border-border/70">
@@ -46,9 +44,21 @@ export function Topbar({ user }: TopbarProps) {
             </div>
           </div>
 
-          <Button variant="secondary" asChild>
-            <Link href={profileHref}>{user.role.name}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="hidden rounded-2xl border border-border/70 bg-white/70 px-4 py-3 text-sm lg:block">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                Role
+              </p>
+              <p className="font-semibold text-foreground">{user.role.name}</p>
+            </div>
+
+            <Button variant="secondary" asChild>
+              <Link href={profileHref}>
+                <KeyRound className="h-4 w-4" />
+                Keamanan Akun
+              </Link>
+            </Button>
+          </div>
 
           <form action={logoutAction}>
             <Button variant="outline" type="submit">

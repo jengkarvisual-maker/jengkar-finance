@@ -4,6 +4,7 @@ import {
   CircleDollarSign,
   CreditCard,
   FileBarChart2,
+  KeyRound,
   LayoutDashboard,
   Package2,
   ReceiptText,
@@ -94,6 +95,16 @@ export const sidebarSections = [
         title: "User Internal",
         href: "/master/users",
         icon: Users2,
+      },
+    ],
+  },
+  {
+    label: "Akun",
+    items: [
+      {
+        title: "Keamanan Akun",
+        href: "/account/security",
+        icon: KeyRound,
       },
     ],
   },
