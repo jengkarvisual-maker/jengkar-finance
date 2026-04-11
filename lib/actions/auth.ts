@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -18,6 +19,23 @@ import {
 } from "@/lib/validations/auth";
 import { requireAdminOrOwner } from "@/lib/auth/guards";
 import { requireUser } from "@/lib/auth/session";
+
+async function buildOwnerLoginMetadata() {
+  const requestHeaders = await headers();
+  const forwardedFor = requestHeaders.get("x-forwarded-for");
+  const ipAddress =
+    forwardedFor?.split(",")[0]?.trim() ?? requestHeaders.get("x-real-ip");
+
+  return {
+    ipAddress,
+    userAgent: requestHeaders.get("user-agent"),
+    forwardedHost: requestHeaders.get("x-forwarded-host"),
+    host: requestHeaders.get("host"),
+    origin: requestHeaders.get("origin"),
+    referer: requestHeaders.get("referer"),
+    loginAt: new Date().toISOString(),
+  };
+}
 
 export async function loginAction(
   input: LoginSchema,
@@ -59,21 +77,25 @@ export async function loginAction(
     role: user.role.key,
   });
 
+  const ownerLoginAudit =
+    user.role.key === "OWNER" ? await buildOwnerLoginMetadata() : undefined;
+
   await Promise.all([
     setAuthCookie(token),
     prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     }),
-    prisma.activityLog.create({
-      data: {
-        action: "LOGIN",
-        entityType: "User",
-        entityId: user.id,
-        description: `${user.name} login ke sistem.`,
-        userId: user.id,
-      },
-    }),
+    user.role.key === "OWNER"
+      ? logActivity({
+          action: "LOGIN",
+          entityType: "OwnerLogin",
+          entityId: user.id,
+          description: `${user.name} login ke sistem menggunakan akun owner.`,
+          userId: user.id,
+          metadata: ownerLoginAudit,
+        })
+      : Promise.resolve(),
   ]);
 
   return {

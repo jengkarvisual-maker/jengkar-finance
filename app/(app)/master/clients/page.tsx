@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { prisma } from "@/lib/prisma";
 import { deleteClientAction } from "@/lib/actions/finance";
 import { DeleteButton } from "@/components/shared/delete-button";
+import { requireUser } from "@/lib/auth/session";
 
 import {
   Table,
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/table";
 
 export default async function MasterClientsPage() {
+  await requireUser();
+
   const clients = await prisma.client.findMany({
     include: {
       _count: {

@@ -83,12 +83,11 @@ types/
   - lihat semua laporan
   - kelola semua data
 - `Admin`
-  - kelola transaksi dan master data
-  - akses brand sesuai assignment atau semua brand
+  - akses modul aplikasi yang sama dengan owner
+  - scope brand mengikuti assignment user atau `allBrandsAccess`
 - `Finance Staff`
-  - input transaksi
-  - kelola piutang/hutang/aset/project untuk brand yang diizinkan
-  - lihat laporan terbatas melalui scope brand
+  - akses modul aplikasi yang sama dengan owner dan admin
+  - scope brand mengikuti assignment user atau `allBrandsAccess`
 
 ## Seed Accounts
 
@@ -97,6 +96,8 @@ Setelah menjalankan seed, login default:
 - `owner@rumahjengkar.id` / `Jengkar123!`
 - `admin@rumahjengkar.id` / `Jengkar123!`
 - `finance@rumahjengkar.id` / `Jengkar123!`
+
+Catatan seed:
 
 Untuk production, jangan biarkan password default ini tetap aktif. Ganti password semua akun seed atau buat akun baru khusus tim internal.
 
@@ -185,6 +186,7 @@ Catatan production:
 - project menghitung pendapatan, biaya, dan profit berdasarkan transaksi terkait
 - aset otomatis membentuk jadwal penyusutan garis lurus per bulan
 - semua create/update/delete penting masuk ke `ActivityLog`
+- login akun `Owner` dicatat ke `ActivityLog` beserta metadata request dasar untuk audit keamanan
 
 ## Export CSV
 

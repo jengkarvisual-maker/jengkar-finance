@@ -13,9 +13,7 @@ type SidebarProps = {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-  const visibleSections = sidebarSections.filter((section) =>
-    user.role.key === "FINANCE_STAFF" ? section.label !== "Master Data" : true,
-  );
+  const visibleSections = sidebarSections;
 
   return (
     <aside className="glass-panel sticky top-0 hidden h-screen w-[280px] flex-col border-r border-border/70 px-5 py-6 lg:flex">

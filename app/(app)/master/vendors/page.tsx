@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { requireAdminOrOwner } from "@/lib/auth/guards";
+import { requireUser } from "@/lib/auth/session";
 import { listVendors } from "@/lib/services/master-data";
 
 export default async function MasterVendorsPage() {
-  await requireAdminOrOwner();
+  await requireUser();
   const vendors = await listVendors();
 
   return (

@@ -26,8 +26,8 @@ import {
 import { slugify } from "@/lib/utils";
 
 function assertMasterDataAccess(roleKey: string) {
-  if (!["OWNER", "ADMIN"].includes(roleKey)) {
-    throw new Error("Akses ditolak. Hanya owner atau admin yang bisa mengelola master data.");
+  if (!["OWNER", "ADMIN", "FINANCE_STAFF"].includes(roleKey)) {
+    throw new Error("Akses ditolak.");
   }
 }
 

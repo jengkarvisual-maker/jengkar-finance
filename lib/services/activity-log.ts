@@ -32,14 +32,19 @@ export async function logActivity(input: LogActivityInput) {
 
 export async function listRecentActivities(user: SessionUser, limit = 8) {
   const allowedBrandIds = getAllowedBrandIds(user);
+  const activityScope = allowedBrandIds
+    ? {
+        OR: [{ brandId: null }, { brandId: { in: allowedBrandIds } }],
+      }
+    : {};
+  const ownerOnlyAuditScope =
+    user.role.key === "OWNER" ? {} : { entityType: { not: "OwnerLogin" as const } };
 
   return prisma.activityLog.findMany({
     take: limit,
-    where: allowedBrandIds
-      ? {
-          OR: [{ brandId: null }, { brandId: { in: allowedBrandIds } }],
-        }
-      : undefined,
+    where: {
+      AND: [activityScope, ownerOnlyAuditScope],
+    },
     include: {
       user: true,
       brand: true,

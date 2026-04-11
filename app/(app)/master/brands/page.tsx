@@ -1,11 +1,11 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { requireAdminOrOwner } from "@/lib/auth/guards";
+import { requireUser } from "@/lib/auth/session";
 import { listBrands } from "@/lib/services/master-data";
 
 export default async function MasterBrandsPage() {
-  const user = await requireAdminOrOwner();
+  const user = await requireUser();
   const brands = await listBrands(user);
 
   return (

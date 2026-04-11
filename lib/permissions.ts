@@ -34,7 +34,7 @@ export function getAllowedBrandIds(user: SessionUser | null | undefined) {
     return [];
   }
 
-  if (user.allBrandsAccess || isOwner(user)) {
+  if (user.allBrandsAccess) {
     return undefined;
   }
 
@@ -51,7 +51,7 @@ export function canAccessBrand(
     return false;
   }
 
-  if (user.allBrandsAccess || isOwner(user)) {
+  if (user.allBrandsAccess) {
     return true;
   }
 
@@ -68,7 +68,7 @@ export function canManageBrand(
     return false;
   }
 
-  if (user.allBrandsAccess || isOwner(user) || isAdmin(user)) {
+  if (user.allBrandsAccess) {
     return true;
   }
 
