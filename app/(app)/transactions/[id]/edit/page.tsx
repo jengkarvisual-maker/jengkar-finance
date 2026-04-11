@@ -8,6 +8,19 @@ import { toDateInputValue, toOptions } from "@/lib/options";
 import { getTransactionById, listInvoices, listVendorBills, listProjects } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 
+function toInvoiceOptions(
+  rows: Awaited<ReturnType<typeof listInvoices>>["rows"],
+) {
+  return rows.map((item) => ({
+    value: item.id,
+    label: [item.invoiceNo, item.client.name, item.brand.name, item.project?.name]
+      .filter(Boolean)
+      .join(" | "),
+    referenceNo: item.invoiceNo ?? "",
+    brandId: item.brandId,
+  }));
+}
+
 export default async function EditTransactionPage({
   params,
 }: {
@@ -71,7 +84,7 @@ export default async function EditTransactionPage({
         vendors={toOptions(master.vendors, (item) => item.id, (item) => item.name)}
         projects={toOptions(projects, (item) => item.id, (item) => item.name)}
         paymentMethods={toOptions(master.paymentMethods, (item) => item.id, (item) => item.name)}
-        invoices={toOptions(invoices.rows, (item) => item.id, (item) => item.invoiceNo)}
+        invoices={toInvoiceOptions(invoices.rows)}
         vendorBills={toOptions(vendorBills.rows, (item) => item.id, (item) => item.billNo)}
       />
     </>

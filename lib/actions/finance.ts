@@ -104,13 +104,32 @@ export async function upsertTransactionAction(
 
   ensureBrandManageAccess(user, parsed.data.brandId);
 
-  const [account, category] = await Promise.all([
+  const normalizedInvoiceId = normalizeOptional(parsed.data.invoiceId);
+
+  const [account, category, invoice] = await Promise.all([
     prisma.account.findUnique({ where: { id: parsed.data.accountId } }),
     prisma.transactionCategory.findUnique({ where: { id: parsed.data.categoryId } }),
+    normalizedInvoiceId
+      ? prisma.invoice.findUnique({
+          where: { id: normalizedInvoiceId },
+          select: { id: true, invoiceNo: true, brandId: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   if (!account || !category) {
     return { ok: false, message: "Akun atau kategori transaksi tidak ditemukan." };
+  }
+
+  if (normalizedInvoiceId && !invoice) {
+    return { ok: false, message: "Invoice terkait tidak ditemukan." };
+  }
+
+  if (invoice && invoice.brandId !== parsed.data.brandId) {
+    return {
+      ok: false,
+      message: "Invoice yang dipilih harus berasal dari brand yang sama dengan transaksi.",
+    };
   }
 
   if (account.category !== category.accountCategory) {
@@ -175,8 +194,8 @@ export async function upsertTransactionAction(
     paymentStatus: parsed.data.paymentStatus,
     amountIn: parsed.data.amountIn,
     amountOut: parsed.data.amountOut,
-    referenceNo: normalizeOptional(parsed.data.referenceNo),
-    invoiceId: normalizeOptional(parsed.data.invoiceId),
+    referenceNo: invoice ? normalizeOptional(invoice.invoiceNo) : normalizeOptional(parsed.data.referenceNo),
+    invoiceId: normalizedInvoiceId,
     vendorBillId: normalizeOptional(parsed.data.vendorBillId),
     notes: normalizeOptional(parsed.data.notes),
     updatedById: user.id,

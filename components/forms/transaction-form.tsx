@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 type Option = {
   value: string;
   label: string;
+  brandId?: string;
+  referenceNo?: string;
 };
 
 type TransactionFormProps = {
@@ -78,6 +80,39 @@ export function TransactionForm({
     },
   });
 
+  const selectedBrandId = form.watch("brandId");
+  const selectedInvoiceId = form.watch("invoiceId");
+  const invoiceField = form.register("invoiceId");
+  const hiddenReferenceField = form.register("referenceNo");
+  const filteredInvoices = selectedBrandId
+    ? invoices.filter((invoice) => invoice.brandId === selectedBrandId)
+    : invoices;
+
+  useEffect(() => {
+    if (!selectedInvoiceId) {
+      return;
+    }
+
+    const selectedInvoice = invoices.find((invoice) => invoice.value === selectedInvoiceId);
+
+    if (!selectedInvoice) {
+      form.setValue("invoiceId", "", { shouldDirty: true, shouldValidate: true });
+      form.setValue("referenceNo", "", { shouldDirty: true });
+      return;
+    }
+
+    if (selectedBrandId && selectedInvoice.brandId && selectedInvoice.brandId !== selectedBrandId) {
+      form.setValue("invoiceId", "", { shouldDirty: true, shouldValidate: true });
+      form.setValue("referenceNo", "", { shouldDirty: true });
+      return;
+    }
+
+    const nextReferenceNo = selectedInvoice.referenceNo ?? "";
+    if ((form.getValues("referenceNo") ?? "") !== nextReferenceNo) {
+      form.setValue("referenceNo", nextReferenceNo, { shouldValidate: true });
+    }
+  }, [form, invoices, selectedBrandId, selectedInvoiceId]);
+
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
     startTransition(async () => {
@@ -98,6 +133,8 @@ export function TransactionForm({
       </CardHeader>
       <CardContent>
         <form className="space-y-6" onSubmit={onSubmit}>
+          <input type="hidden" {...hiddenReferenceField} />
+
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="transactionDate">Tanggal transaksi</Label>
@@ -131,8 +168,28 @@ export function TransactionForm({
               <Input id="description" placeholder="Contoh: DP Wedding Andra & Nisa" {...form.register("description")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="referenceNo">Referensi invoice / nota</Label>
-              <Input id="referenceNo" placeholder="INV-2026..." {...form.register("referenceNo")} />
+              <Label htmlFor="invoiceId">Referensi invoice / nota</Label>
+              <Select
+                id="invoiceId"
+                options={filteredInvoices}
+                placeholder={selectedBrandId ? "Pilih invoice dari menu Piutang" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                name={invoiceField.name}
+                onBlur={invoiceField.onBlur}
+                ref={invoiceField.ref}
+                value={selectedInvoiceId ?? ""}
+                onChange={(event) => {
+                  invoiceField.onChange(event);
+                  const selectedInvoice = invoices.find((invoice) => invoice.value === event.target.value);
+                  form.setValue("referenceNo", selectedInvoice?.referenceNo ?? "", {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Dropdown ini mengambil invoice yang sudah dibuat di menu Piutang.
+              </p>
             </div>
           </div>
 
@@ -152,10 +209,6 @@ export function TransactionForm({
             <div className="space-y-2">
               <Label htmlFor="paymentMethodId">Metode pembayaran</Label>
               <Select id="paymentMethodId" options={paymentMethods} placeholder="Opsional" {...form.register("paymentMethodId")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceId">Invoice terkait</Label>
-              <Select id="invoiceId" options={invoices} placeholder="Opsional" {...form.register("invoiceId")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vendorBillId">Tagihan vendor terkait</Label>
