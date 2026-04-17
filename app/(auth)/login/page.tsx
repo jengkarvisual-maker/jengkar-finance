@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/forms/login-form";
+import { INTERNAL_APP_LINKS } from "@/lib/constants";
 
 export default function LoginPage() {
   return (
@@ -35,6 +36,34 @@ export default function LoginPage() {
                   {item}
                 </div>
               ))}
+            </div>
+
+            <div className="rounded-[28px] border border-border/70 bg-white/78 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Aplikasi Rumah Jengkar
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {INTERNAL_APP_LINKS.map((app) =>
+                  app.href ? (
+                    <a
+                      key={app.name}
+                      href={app.href}
+                      className="rounded-[22px] border border-border/70 bg-white/80 px-4 py-4 transition hover:border-primary/25 hover:bg-white"
+                    >
+                      <p className="font-semibold text-foreground">{app.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{app.domain}</p>
+                    </a>
+                  ) : (
+                    <div
+                      key={app.name}
+                      className="rounded-[22px] border border-dashed border-border/70 bg-white/55 px-4 py-4"
+                    >
+                      <p className="font-semibold text-foreground">{app.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{app.domain}</p>
+                    </div>
+                  ),
+                )}
+              </div>
             </div>
           </div>
         </div>

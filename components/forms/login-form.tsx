@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { loginAction } from "@/lib/actions/auth";
+import { APP_DOMAIN } from "@/lib/constants";
 import { loginSchema, type LoginSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +56,16 @@ export function LoginForm() {
       <CardHeader className="space-y-3">
         <div className="metric-chip">Internal Access</div>
         <CardTitle>Masuk ke RUMAH JENGKAR FINANCE</CardTitle>
-        <p className="text-sm leading-6 text-muted-foreground">{helperText}</p>
+        <div className="space-y-2">
+          <p className="text-sm leading-6 text-muted-foreground">{helperText}</p>
+          <div className="rounded-2xl border border-border/70 bg-white/70 px-4 py-3 text-sm text-muted-foreground">
+            Akses utama finance kini dipusatkan di{" "}
+            <span className="font-semibold text-foreground">
+              {APP_DOMAIN.replace(/^https?:\/\//, "")}
+            </span>
+            .
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={onSubmit}>
@@ -64,7 +74,7 @@ export function LoginForm() {
             <Input
               id="email"
               type="email"
-              placeholder="owner@rumahjengkar.id"
+              placeholder="nama@rumahjengkar.com"
               {...form.register("email")}
             />
             {form.formState.errors.email ? (

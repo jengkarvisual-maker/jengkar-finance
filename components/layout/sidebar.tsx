@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ArrowUpRight } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { INTERNAL_APP_LINKS } from "@/lib/constants";
 import { sidebarSections } from "@/lib/navigation";
 import type { SessionUser } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -76,7 +79,75 @@ export function Sidebar({ user }: SidebarProps) {
             </div>
           </div>
         ))}
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 px-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Aplikasi Jengkar
+            </p>
+            <Badge variant="muted">Lintas app</Badge>
+          </div>
+          <div className="space-y-3">
+            {INTERNAL_APP_LINKS.map((app) => {
+              const statusVariant =
+                app.status === "active"
+                  ? "success"
+                  : app.status === "setup"
+                    ? "warning"
+                    : "muted";
+
+              return app.href ? (
+                <a
+                  key={app.name}
+                  href={app.href}
+                  className="block rounded-[24px] border border-border/70 bg-white/70 px-4 py-4 transition hover:border-primary/30 hover:bg-white/85"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">{app.name}</p>
+                      <p className="text-xs text-muted-foreground">{app.domain}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={statusVariant}>{getStatusLabel(app.status)}</Badge>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    {app.description}
+                  </p>
+                </a>
+              ) : (
+                <div
+                  key={app.name}
+                  className="rounded-[24px] border border-dashed border-border/70 bg-white/50 px-4 py-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">{app.name}</p>
+                      <p className="text-xs text-muted-foreground">{app.domain}</p>
+                    </div>
+                    <Badge variant={statusVariant}>{getStatusLabel(app.status)}</Badge>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    {app.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </nav>
     </aside>
   );
+}
+
+function getStatusLabel(status: "active" | "setup" | "planned") {
+  switch (status) {
+    case "active":
+      return "Aktif";
+    case "setup":
+      return "Disiapkan";
+    case "planned":
+      return "Direncanakan";
+  }
 }

@@ -150,7 +150,7 @@ Lihat `.env.example`:
 
 Untuk production:
 
-- set `APP_URL` ke domain publik final, misalnya `https://jengkar-finance-nine.vercel.app` atau custom domain Anda
+- set `APP_URL` ke domain publik final, misalnya `https://finance.rumahjengkar.com`
 - gunakan `SESSION_SECRET` acak yang panjang
 - pastikan `DATABASE_URL` dan `DIRECT_URL` mengarah ke database production
 

@@ -1,4 +1,40 @@
 export const APP_NAME = "RUMAH JENGKAR FINANCE";
+export const APP_DOMAIN = "https://finance.rumahjengkar.com";
+
+export type InternalAppLink = {
+  name: string;
+  href: string | null;
+  domain: string;
+  description: string;
+  status: "active" | "setup" | "planned";
+};
+
+export const INTERNAL_APP_LINKS: InternalAppLink[] = [
+  {
+    name: "JEPAT",
+    href: "https://jepat.rumahjengkar.com",
+    domain: "jepat.rumahjengkar.com",
+    description:
+      "Pelacakan emosi, Human Design, dan rekomendasi reflektif tim internal.",
+    status: "active",
+  },
+  {
+    name: "Finance",
+    href: APP_DOMAIN,
+    domain: "finance.rumahjengkar.com",
+    description:
+      "Operating system keuangan multi-brand untuk transaksi, laporan, dan kontrol cash flow.",
+    status: "active",
+  },
+  {
+    name: "SOP + KPI + Bonus",
+    href: null,
+    domain: "ops.rumahjengkar.com",
+    description:
+      "Disiapkan untuk pengelolaan SOP, KPI, dan bonus tahunan saat aplikasi ketiga siap.",
+    status: "planned",
+  },
+];
 
 export const BRANDS = [
   "The Photoworks",

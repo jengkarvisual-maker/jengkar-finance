@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { CalendarDays, KeyRound, LogOut, Search } from "lucide-react";
+import { ArrowUpRight, CalendarDays, KeyRound, LogOut, Search } from "lucide-react";
 
 import { logoutAction } from "@/lib/actions/auth";
+import { INTERNAL_APP_LINKS } from "@/lib/constants";
 import type { SessionUser } from "@/lib/permissions";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,28 @@ export function Topbar({ user }: TopbarProps) {
               Logout
             </Button>
           </form>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+          {INTERNAL_APP_LINKS.map((app) =>
+            app.href ? (
+              <a
+                key={app.name}
+                href={app.href}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border/70 bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/25 hover:bg-white"
+              >
+                {app.name}
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+              </a>
+            ) : (
+              <span
+                key={app.name}
+                className="whitespace-nowrap rounded-full border border-dashed border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground"
+              >
+                {app.name} - segera
+              </span>
+            ),
+          )}
         </div>
       </div>
     </header>
