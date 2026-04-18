@@ -88,6 +88,11 @@ async function main() {
         name: "Finance Staff",
         description: "Input transaksi, piutang, hutang, dan laporan terbatas.",
       },
+      {
+        key: RoleKey.TEAM_MEMBER,
+        name: "Team Member",
+        description: "Identitas internal lintas aplikasi tanpa akses ke modul finance.",
+      },
     ],
   });
 
@@ -196,7 +201,7 @@ async function main() {
   const owner = await prisma.user.create({
     data: {
       name: "RJ Owner",
-      email: "owner@rumahjengkar.id",
+      email: "owner@rumahjengkar.com",
       passwordHash: ownerPassword,
       roleId: roleMap.OWNER,
       allBrandsAccess: true,
@@ -206,7 +211,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: "RJ Admin",
-      email: "admin@rumahjengkar.id",
+      email: "admin@rumahjengkar.com",
       passwordHash: adminPassword,
       roleId: roleMap.ADMIN,
       allBrandsAccess: true,
@@ -216,7 +221,7 @@ async function main() {
   const finance = await prisma.user.create({
     data: {
       name: "RJ Finance",
-      email: "finance@rumahjengkar.id",
+      email: "finance@rumahjengkar.com",
       passwordHash: financePassword,
       roleId: roleMap.FINANCE_STAFF,
       allBrandsAccess: false,
@@ -228,6 +233,61 @@ async function main() {
       { userId: finance.id, brandId: brandMap.TPW.id, canView: true, canManage: true },
       { userId: finance.id, brandId: brandMap.BBP.id, canView: true, canManage: true },
       { userId: finance.id, brandId: brandMap.WAJ.id, canView: true, canManage: true },
+    ],
+  });
+
+  const teamMemberPassword = await bcrypt.hash("Jengkar123!", 12);
+
+  await prisma.user.createMany({
+    data: [
+      {
+        name: "Yongki Pardamean",
+        email: "yongki@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Sindy Pratiwi",
+        email: "sindy@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Cepi",
+        email: "cepi@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Ilham Nasrudin",
+        email: "ndog@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Lugas Adepi Bumi",
+        email: "lugas@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Naila Salma",
+        email: "nong@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Nuzulul Lia",
+        email: "nuz@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
+      {
+        name: "Zaka",
+        email: "zaka@rumahjengkar.com",
+        passwordHash: teamMemberPassword,
+        roleId: roleMap.TEAM_MEMBER,
+      },
     ],
   });
 

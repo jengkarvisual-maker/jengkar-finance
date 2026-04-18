@@ -29,6 +29,10 @@ export function canManageFinance(user: SessionUser | null | undefined) {
   return Boolean(user && ["OWNER", "ADMIN", "FINANCE_STAFF"].includes(user.role.key));
 }
 
+export function canAccessFinanceWorkspace(user: SessionUser | null | undefined) {
+  return canManageFinance(user);
+}
+
 export function getAllowedBrandIds(user: SessionUser | null | undefined) {
   if (!user) {
     return [];

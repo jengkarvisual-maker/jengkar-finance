@@ -25,7 +25,7 @@ export default async function AccountSecurityPage() {
     .filter((item) =>
       user.role.key === "OWNER"
         ? true
-        : item.role.key === "FINANCE_STAFF",
+        : ["FINANCE_STAFF", "TEAM_MEMBER"].includes(item.role.key),
     )
     .map((item) => ({
       id: item.id,
@@ -66,7 +66,7 @@ export default async function AccountSecurityPage() {
               <CardDescription>
                 {user.role.key === "OWNER"
                   ? "Owner bisa membantu reset password user lain saat mereka kehilangan akses."
-                  : "Admin hanya bisa mereset password akun finance staff."}
+                  : "Admin bisa membantu reset password akun finance staff dan team member."}
               </CardDescription>
             </CardHeader>
             <CardContent>

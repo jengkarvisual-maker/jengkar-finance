@@ -12,6 +12,7 @@ enum RoleKey {
   OWNER
   ADMIN
   FINANCE_STAFF
+  TEAM_MEMBER
 }
 
 enum UserStatus {

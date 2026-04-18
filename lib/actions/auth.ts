@@ -186,7 +186,7 @@ function canResetTarget(actorRole: string, targetRole: string) {
   }
 
   if (actorRole === "ADMIN") {
-    return targetRole === "FINANCE_STAFF";
+    return ["FINANCE_STAFF", "TEAM_MEMBER"].includes(targetRole);
   }
 
   return false;

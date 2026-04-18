@@ -11,14 +11,6 @@ export type InternalAppLink = {
 
 export const INTERNAL_APP_LINKS: InternalAppLink[] = [
   {
-    name: "JEPAT",
-    href: "https://jepat.rumahjengkar.com",
-    domain: "jepat.rumahjengkar.com",
-    description:
-      "Pelacakan emosi, Human Design, dan rekomendasi reflektif tim internal.",
-    status: "active",
-  },
-  {
     name: "Finance",
     href: APP_DOMAIN,
     domain: "finance.rumahjengkar.com",
@@ -27,12 +19,12 @@ export const INTERNAL_APP_LINKS: InternalAppLink[] = [
     status: "active",
   },
   {
-    name: "SOP + KPI + Bonus",
-    href: null,
+    name: "Jengkar KPI",
+    href: "https://ops.rumahjengkar.com",
     domain: "ops.rumahjengkar.com",
     description:
-      "Disiapkan untuk pengelolaan SOP, KPI, dan bonus tahunan saat aplikasi ketiga siap.",
-    status: "planned",
+      "Absensi, progres kerja, KPI bulanan, dan bonus tahunan untuk operasional tim.",
+    status: "active",
   },
 ];
 
@@ -49,6 +41,7 @@ export const ROLE_OPTIONS = [
   { label: "Owner", value: "OWNER" },
   { label: "Admin", value: "ADMIN" },
   { label: "Finance Staff", value: "FINANCE_STAFF" },
+  { label: "Team Member", value: "TEAM_MEMBER" },
 ] as const;
 
 export const TRANSACTION_TYPE_OPTIONS = [
