@@ -3,24 +3,66 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function ClientForm() {
-  const router = useRouter();
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { SelectOption } from "@/lib/options";
 
-  const [name, setName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
+type ClientFormProps = {
+  brands: SelectOption[];
+  id?: string;
+  defaultValues?: {
+    name?: string;
+    companyName?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    notes?: string;
+    brandIds?: string[];
+  };
+  lockedBrandIds?: string[];
+};
+
+export function ClientForm({
+  brands,
+  id,
+  defaultValues,
+  lockedBrandIds = [],
+}: ClientFormProps) {
+  const router = useRouter();
+  const isEditMode = Boolean(id);
+  const initialBrandIds = [...new Set([...(defaultValues?.brandIds ?? []), ...lockedBrandIds])];
+  const lockedBrandIdSet = new Set(lockedBrandIds);
+
+  const [name, setName] = useState(defaultValues?.name ?? "");
+  const [companyName, setCompanyName] = useState(defaultValues?.companyName ?? "");
+  const [phone, setPhone] = useState(defaultValues?.phone ?? "");
+  const [email, setEmail] = useState(defaultValues?.email ?? "");
+  const [address, setAddress] = useState(defaultValues?.address ?? "");
+  const [notes, setNotes] = useState(defaultValues?.notes ?? "");
+  const [brandIds, setBrandIds] = useState<string[]>(initialBrandIds);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function toggleBrand(brandId: string) {
+    if (lockedBrandIdSet.has(brandId)) {
+      return;
+    }
+
+    setBrandIds((current) =>
+      current.includes(brandId)
+        ? current.filter((item) => item !== brandId)
+        : [...current, brandId],
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/master/clients", {
-        method: "POST",
+      const response = await fetch(id ? `/api/master/clients/${id}` : "/api/master/clients", {
+        method: isEditMode ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -31,6 +73,7 @@ export function ClientForm() {
           email,
           address,
           notes,
+          brandIds,
         }),
       });
 
@@ -51,70 +94,99 @@ export function ClientForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border bg-white/80 p-6">
       <div className="space-y-2">
-        <label className="text-sm font-medium">Nama</label>
-        <input
+        <Label>Nama</Label>
+        <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
           required
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Company</label>
-        <input
+        <Label>Company</Label>
+        <Input
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Kontak / Phone</label>
-        <input
+        <Label>Kontak / Phone</Label>
+        <Input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Email</label>
-        <input
+        <Label>Email</Label>
+        <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Alamat</label>
-        <textarea
+        <Label>Alamat</Label>
+        <Textarea
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
           rows={3}
         />
+      </div>
+
+      <div className="space-y-3">
+        <Label>Brand yang memakai client ini</Label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {brands.map((brand) => {
+            const checked = brandIds.includes(brand.value);
+            const isLocked = lockedBrandIdSet.has(brand.value);
+
+            return (
+              <label
+                key={brand.value}
+                className={`flex items-center gap-3 rounded-2xl border border-border/70 bg-white/80 px-4 py-3 text-sm text-foreground ${isLocked ? "opacity-80" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border"
+                  checked={checked}
+                  disabled={isLocked}
+                  onChange={() => toggleBrand(brand.value)}
+                />
+                <span>{brand.label}</span>
+                {isLocked ? (
+                  <span className="ml-auto text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Terkunci
+                  </span>
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Pilih minimal satu brand agar client muncul di dropdown project, invoice, dan transaksi.
+        </p>
+        {lockedBrandIds.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Brand yang sudah dipakai histori project, invoice, atau transaksi tidak bisa dilepas.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Catatan</label>
-        <textarea
+        <Label>Catatan</Label>
+        <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full rounded-md border px-3 py-2"
           rows={3}
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="rounded-md bg-green-700 px-4 py-2 text-white disabled:opacity-50"
-      >
-        {isSubmitting ? "Menyimpan..." : "Simpan client"}
-      </button>
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Menyimpan..." : isEditMode ? "Simpan perubahan" : "Simpan client"}
+      </Button>
     </form>
   );
 }

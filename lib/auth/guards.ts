@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 
 export async function requireAdminOrOwner() {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
 
   if (!["OWNER", "ADMIN"].includes(user.role.key)) {
     redirect("/dashboard");

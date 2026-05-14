@@ -23,6 +23,37 @@ export function QueryFilters({
   categoryOptions = [],
   defaultValues = {},
 }: QueryFiltersProps) {
+  const statusFilter =
+    statusOptions.length > 0 ? (
+      <Select
+        name="status"
+        defaultValue={defaultValues.status}
+        placeholder="Semua status"
+        options={statusOptions}
+      />
+    ) : categoryOptions.length > 0 ? (
+      <Select
+        name="accountCategory"
+        defaultValue={defaultValues.accountCategory}
+        placeholder="Semua kategori"
+        options={categoryOptions}
+      />
+    ) : (
+      <div />
+    );
+
+  const categoryFilter =
+    statusOptions.length > 0 && categoryOptions.length > 0 ? (
+      <Select
+        name="accountCategory"
+        defaultValue={defaultValues.accountCategory}
+        placeholder="Semua kategori"
+        options={categoryOptions}
+      />
+    ) : (
+      <div />
+    );
+
   return (
     <form className="grid gap-3 rounded-[28px] border border-border/70 bg-white/70 p-4 md:grid-cols-2 xl:grid-cols-[1.6fr_repeat(5,1fr)_auto]">
       <div className="relative">
@@ -46,33 +77,8 @@ export function QueryFilters({
       )}
       <Input name="from" type="date" defaultValue={defaultValues.from} />
       <Input name="to" type="date" defaultValue={defaultValues.to} />
-      {statusOptions.length > 0 ? (
-        <Select
-          name="status"
-          defaultValue={defaultValues.status}
-          placeholder="Semua status"
-          options={statusOptions}
-        />
-      ) : categoryOptions.length > 0 ? (
-        <Select
-          name="accountCategory"
-          defaultValue={defaultValues.accountCategory}
-          placeholder="Semua kategori"
-          options={categoryOptions}
-        />
-      ) : (
-        <div />
-      )}
-      {categoryOptions.length > 0 ? (
-        <Select
-          name="accountCategory"
-          defaultValue={defaultValues.accountCategory}
-          placeholder="Semua kategori"
-          options={categoryOptions}
-        />
-      ) : (
-        <div />
-      )}
+      {statusFilter}
+      {categoryFilter}
       <Button type="submit">Terapkan</Button>
     </form>
   );

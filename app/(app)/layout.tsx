@@ -1,19 +1,12 @@
-import { redirect } from "next/navigation";
-
 import { AppShell } from "@/components/layout/app-shell";
-import { requireUser } from "@/lib/auth/session";
-import { canAccessFinanceWorkspace } from "@/lib/permissions";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 
 export default async function ProtectedLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await requireUser();
-
-  if (!canAccessFinanceWorkspace(user)) {
-    redirect("/access-denied");
-  }
+  const user = await requireFinanceWorkspaceUser();
 
   return (
     <AppShell user={user}>

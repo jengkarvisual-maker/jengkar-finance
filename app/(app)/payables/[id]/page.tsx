@@ -34,7 +34,7 @@ export default async function PayableDetailPage({
             <Button asChild variant="secondary">
               <Link href={`/payables/${bill.id}/edit`}>Edit tagihan</Link>
             </Button>
-            <DeleteButton action={deleteVendorBillAction} id={bill.id} />
+            <DeleteButton action={deleteVendorBillAction} id={bill.id} redirectTo="/payables" />
           </>
         }
       />

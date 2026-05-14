@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentSession } from "@/lib/auth/session";
 import { toCsv } from "@/lib/csv";
+import { canAccessFinanceWorkspace } from "@/lib/permissions";
 import { listVendorBills } from "@/lib/services/finance";
 
 export async function GET(request: Request) {
@@ -9,6 +10,11 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+
+  if (!canAccessFinanceWorkspace(user)) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const payables = await listVendorBills(user, {
     brandId: searchParams.get("brandId") ?? undefined,

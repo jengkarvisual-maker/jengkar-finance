@@ -1,23 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { loginAction } from "@/lib/actions/auth";
-import { APP_DOMAIN } from "@/lib/constants";
 import { loginSchema, type LoginSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const isProduction = process.env.NODE_ENV === "production";
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
@@ -26,14 +23,6 @@ export function LoginForm() {
       password: "",
     },
   });
-
-  const helperText = useMemo(
-    () =>
-      isProduction
-        ? "Gunakan email dan password internal yang diberikan khusus untuk tim Rumah Jengkar."
-        : "Gunakan akun internal. Untuk environment dev, akun seed owner, admin, dan finance staff tersedia di README.",
-    [isProduction],
-  );
 
   const onSubmit = form.handleSubmit((values) => {
     setServerMessage(null);
@@ -52,64 +41,65 @@ export function LoginForm() {
   });
 
   return (
-    <Card className="w-full max-w-md border-border/70 bg-card/90">
-      <CardHeader className="space-y-3">
-        <div className="metric-chip">Internal Access</div>
-        <CardTitle>Masuk ke RUMAH JENGKAR FINANCE</CardTitle>
-        <div className="space-y-2">
-          <p className="text-sm leading-6 text-muted-foreground">{helperText}</p>
-          <div className="rounded-2xl border border-border/70 bg-white/70 px-4 py-3 text-sm text-muted-foreground">
-            Akses utama finance kini dipusatkan di{" "}
-            <span className="font-semibold text-foreground">
-              {APP_DOMAIN.replace(/^https?:\/\//, "")}
-            </span>
-            .
-          </div>
+    <form className="space-y-5" onSubmit={onSubmit}>
+      <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
+        <div>
+          <label className="sr-only" htmlFor="email">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="Email"
+            className="h-14 rounded-full bg-white px-5 text-base"
+            {...form.register("email")}
+          />
+          {form.formState.errors.email ? (
+            <p className="mt-2 text-sm text-destructive">
+              {form.formState.errors.email.message}
+            </p>
+          ) : null}
         </div>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="nama@rumahjengkar.com"
-              {...form.register("email")}
-            />
-            {form.formState.errors.email ? (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.email.message}
-              </p>
-            ) : null}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+        <div>
+          <label className="sr-only" htmlFor="password">
+            Password
+          </label>
+          <div className="relative">
             <Input
               id="password"
-              type="password"
-              placeholder="Masukkan password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="h-14 rounded-full bg-white px-5 pr-28 text-base"
               {...form.register("password")}
             />
-            {form.formState.errors.password ? (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.password.message}
-              </p>
-            ) : null}
+            <button
+              type="button"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+              className="button-press absolute right-2 top-1/2 inline-flex h-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white/80 px-4 text-xs font-semibold text-foreground transition hover:border-primary/25 hover:bg-white"
+              onClick={() => setShowPassword((current) => !current)}
+              disabled={isPending}
+            >
+              {showPassword ? "Sembunyikan" : "Lihat"}
+            </button>
           </div>
-
-          {serverMessage ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              {serverMessage}
-            </div>
+          {form.formState.errors.password ? (
+            <p className="mt-2 text-sm text-destructive">
+              {form.formState.errors.password.message}
+            </p>
           ) : null}
+        </div>
+      </div>
 
-          <Button className="w-full" type="submit" disabled={isPending}>
-            {isPending ? "Memverifikasi..." : "Masuk ke dashboard"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      {serverMessage ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {serverMessage}
+        </div>
+      ) : null}
+
+      <Button className="h-14 w-full rounded-full text-base" type="submit" disabled={isPending}>
+        {isPending ? "Memverifikasi..." : "Masuk ke akun"}
+      </Button>
+    </form>
   );
 }

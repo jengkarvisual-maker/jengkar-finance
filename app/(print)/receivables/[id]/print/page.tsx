@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PrintToolbar } from "@/components/shared/print-toolbar";
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ export default async function ReceivablePrintPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   const { id } = await params;
   const invoice = await getInvoiceById(user, id);
 

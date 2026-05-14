@@ -1,5 +1,7 @@
 import type { Brand, RoleKey, User } from "@prisma/client";
 
+import { FINANCE_INTERNAL_USER_EMAILS } from "@/lib/constants";
+
 export type SessionUser = Pick<
   User,
   "id" | "name" | "email" | "allBrandsAccess" | "roleId"
@@ -25,12 +27,64 @@ export function isAdmin(user: SessionUser | null | undefined) {
   return user?.role.key === "ADMIN";
 }
 
+export function hasAllBrandAccess(user: SessionUser | null | undefined) {
+  return Boolean(
+    user &&
+      (user.allBrandsAccess ||
+        ["OWNER", "ADMIN", "FINANCE_STAFF"].includes(user.role.key)),
+  );
+}
+
 export function canManageFinance(user: SessionUser | null | undefined) {
   return Boolean(user && ["OWNER", "ADMIN", "FINANCE_STAFF"].includes(user.role.key));
 }
 
+export function isFinanceInternalUser(
+  user: Pick<SessionUser, "email"> | null | undefined,
+) {
+  if (!user) {
+    return false;
+  }
+
+  return FINANCE_INTERNAL_USER_EMAILS.includes(
+    user.email.toLowerCase() as (typeof FINANCE_INTERNAL_USER_EMAILS)[number],
+  );
+}
+
+export function getFinanceUserRoleLabel(
+  user:
+    | (Pick<SessionUser, "email"> & {
+        role: {
+          key: RoleKey;
+          name: string;
+        };
+      })
+    | null
+    | undefined,
+) {
+  if (!user) {
+    return "";
+  }
+
+  const email = user.email.toLowerCase();
+
+  if (email === "owner@rumahjengkar.com") {
+    return "Owner";
+  }
+
+  if (email === "finance@rumahjengkar.com") {
+    return "Finance";
+  }
+
+  if (user.role.key === "ADMIN") {
+    return "Admin";
+  }
+
+  return user.role.name;
+}
+
 export function canAccessFinanceWorkspace(user: SessionUser | null | undefined) {
-  return canManageFinance(user);
+  return canManageFinance(user) && isFinanceInternalUser(user);
 }
 
 export function getAllowedBrandIds(user: SessionUser | null | undefined) {
@@ -38,7 +92,7 @@ export function getAllowedBrandIds(user: SessionUser | null | undefined) {
     return [];
   }
 
-  if (user.allBrandsAccess) {
+  if (hasAllBrandAccess(user)) {
     return undefined;
   }
 
@@ -55,7 +109,7 @@ export function canAccessBrand(
     return false;
   }
 
-  if (user.allBrandsAccess) {
+  if (hasAllBrandAccess(user)) {
     return true;
   }
 
@@ -72,7 +126,7 @@ export function canManageBrand(
     return false;
   }
 
-  if (user.allBrandsAccess) {
+  if (hasAllBrandAccess(user)) {
     return true;
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 
 import { getCurrentSession } from "@/lib/auth/session";
+import { canAccessFinanceWorkspace } from "@/lib/permissions";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -18,6 +19,10 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!canAccessFinanceWorkspace(user)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;

@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth/session";
+import { getFinanceUserRoleLabel, hasAllBrandAccess } from "@/lib/permissions";
 import { listUsers } from "@/lib/services/master-data";
 
 export default async function MasterUsersPage() {
@@ -13,7 +14,7 @@ export default async function MasterUsersPage() {
       <PageHeader
         eyebrow="Master data"
         title="User internal"
-        description="Owner, admin, dan finance staff beserta akses brand masing-masing."
+        description="Daftar akun internal yang dipakai khusus untuk mengakses aplikasi Finance."
       />
       <Table>
         <TableHeader>
@@ -30,12 +31,12 @@ export default async function MasterUsersPage() {
             <TableRow key={user.id}>
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role.name}</TableCell>
+              <TableCell>{getFinanceUserRoleLabel(user)}</TableCell>
               <TableCell>
                 <StatusBadge status={user.status} />
               </TableCell>
               <TableCell>
-                {user.allBrandsAccess
+                {hasAllBrandAccess(user)
                   ? "Semua brand"
                   : user.brandAccesses.map((access) => access.brand.name).join(", ")}
               </TableCell>

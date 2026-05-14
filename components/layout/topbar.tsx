@@ -3,6 +3,8 @@ import { ArrowUpRight, CalendarDays, KeyRound, LogOut, Search } from "lucide-rea
 
 import { logoutAction } from "@/lib/actions/auth";
 import { INTERNAL_APP_LINKS } from "@/lib/constants";
+import { getFinanceUserRoleLabel } from "@/lib/permissions";
+import { hasAllBrandAccess } from "@/lib/permissions";
 import type { SessionUser } from "@/lib/permissions";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ type TopbarProps = {
 };
 
 export function Topbar({ user }: TopbarProps) {
-  const accessibleBrands = user.allBrandsAccess
+  const accessibleBrands = hasAllBrandAccess(user)
     ? "Semua brand"
     : `${user.brandAccesses.length} brand`;
   const profileHref = "/account/security";
@@ -50,7 +52,9 @@ export function Topbar({ user }: TopbarProps) {
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 Role
               </p>
-              <p className="font-semibold text-foreground">{user.role.name}</p>
+              <p className="font-semibold text-foreground">
+                {getFinanceUserRoleLabel(user)}
+              </p>
             </div>
 
             <Button variant="secondary" asChild>
@@ -75,7 +79,7 @@ export function Topbar({ user }: TopbarProps) {
               <a
                 key={app.name}
                 href={app.href}
-                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border/70 bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/25 hover:bg-white"
+                className="button-press inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border/70 bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/25 hover:bg-white"
               >
                 {app.name}
                 <ArrowUpRight className="h-4 w-4 text-muted-foreground" />

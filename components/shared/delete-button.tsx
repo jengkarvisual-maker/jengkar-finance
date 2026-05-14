@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,14 +8,15 @@ type DeleteButtonProps = {
   action: (id: string) => Promise<{ ok: boolean; message: string }>;
   id: string;
   label?: string;
+  redirectTo?: string;
 };
 
 export function DeleteButton({
   action,
   id,
   label = "Hapus",
+  redirectTo,
 }: DeleteButtonProps) {
-  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -34,10 +34,12 @@ export function DeleteButton({
 
           startTransition(async () => {
             const result = await action(id);
-            setMessage(result.message);
             if (result.ok) {
-              router.refresh();
+              window.location.assign(redirectTo ?? window.location.href);
+              return;
             }
+
+            setMessage(result.message);
           });
         }}
       >

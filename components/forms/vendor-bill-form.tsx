@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 type Option = {
   value: string;
   label: string;
+  brandId?: string;
+  brandIds?: string[];
 };
 
 type VendorBillFormProps = {
@@ -26,6 +28,7 @@ type VendorBillFormProps = {
   brands: Option[];
   vendors: Option[];
   projects: Option[];
+  isLinkedToTransactions?: boolean;
 };
 
 export function VendorBillForm({
@@ -34,6 +37,7 @@ export function VendorBillForm({
   brands,
   vendors,
   projects,
+  isLinkedToTransactions = false,
 }: VendorBillFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -53,6 +57,31 @@ export function VendorBillForm({
       notes: defaultValues?.notes ?? "",
     },
   });
+  const selectedBrandId = form.watch("brandId");
+  const selectedVendorId = form.watch("vendorId");
+  const selectedProjectId = form.watch("projectId");
+  const filteredVendors = selectedBrandId
+    ? vendors.filter((vendor) => vendor.brandIds?.includes(selectedBrandId))
+    : vendors;
+  const filteredProjects = selectedBrandId
+    ? projects.filter((project) => project.brandId === selectedBrandId)
+    : projects;
+
+  useEffect(() => {
+    if (!selectedBrandId) {
+      return;
+    }
+
+    const selectedVendor = vendors.find((vendor) => vendor.value === selectedVendorId);
+    if (selectedVendorId && (!selectedVendor || !selectedVendor.brandIds?.includes(selectedBrandId))) {
+      form.setValue("vendorId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedProject = projects.find((project) => project.value === selectedProjectId);
+    if (selectedProjectId && (!selectedProject || selectedProject.brandId !== selectedBrandId)) {
+      form.setValue("projectId", "", { shouldDirty: true, shouldValidate: true });
+    }
+  }, [form, projects, selectedBrandId, selectedProjectId, selectedVendorId, vendors]);
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
@@ -91,7 +120,13 @@ export function VendorBillForm({
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="vendorId">Vendor</Label>
-              <Select id="vendorId" options={vendors} placeholder="Pilih vendor" {...form.register("vendorId")} />
+              <Select
+                id="vendorId"
+                options={filteredVendors}
+                placeholder={selectedBrandId ? "Pilih vendor" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("vendorId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="brandId">Brand</Label>
@@ -99,9 +134,22 @@ export function VendorBillForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="projectId">Project</Label>
-              <Select id="projectId" options={projects} placeholder="Opsional" {...form.register("projectId")} />
+              <Select
+                id="projectId"
+                options={filteredProjects}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("projectId")}
+              />
             </div>
           </div>
+
+          {isLinkedToTransactions ? (
+            <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              Tagihan ini sudah punya histori transaksi pembayaran. Perubahan vendor, brand, atau project akan ditolak
+              oleh sistem agar rekap hutang tetap konsisten.
+            </div>
+          ) : null}
 
           <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
             <div className="space-y-2">
@@ -110,7 +158,7 @@ export function VendorBillForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="totalAmount">Total tagihan</Label>
-              <Input id="totalAmount" type="number" min="0" step="1000" {...form.register("totalAmount", { valueAsNumber: true })} />
+              <Input id="totalAmount" type="number" min="0" step="1" {...form.register("totalAmount", { valueAsNumber: true })} />
             </div>
           </div>
 

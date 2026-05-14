@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { InvoiceForm } from "@/components/forms/invoice-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireUser } from "@/lib/auth/session";
-import { toDateInputValue, toOptions } from "@/lib/options";
+import { toDateInputValue, toMetaOptions, toOptions } from "@/lib/options";
 import { getInvoiceById, listProjects } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 
@@ -45,8 +45,13 @@ export default async function EditReceivablePage({
           notes: invoice.notes ?? "",
         }}
         brands={toOptions(master.brands, (item) => item.id, (item) => item.name)}
-        clients={toOptions(master.clients, (item) => item.id, (item) => item.name)}
-        projects={toOptions(projects, (item) => item.id, (item) => item.name)}
+        clients={toMetaOptions(master.clients, (item) => item.id, (item) => item.name, (item) => ({
+          brandIds: item.brandLinks.map((link) => link.brandId),
+        }))}
+        projects={toMetaOptions(projects, (item) => item.id, (item) => item.name, (item) => ({
+          brandId: item.brandId,
+        }))}
+        isLinkedToTransactions={invoice.transactions.length > 0}
       />
     </>
   );

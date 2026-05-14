@@ -47,12 +47,12 @@ export default async function DashboardPage() {
           label="Omzet bulan berjalan"
           value={dashboard.metrics.omzetThisMonth}
           previousValue={dashboard.metrics.omzetPrevMonth}
-          hint="Dibanding bulan lalu"
+          hint="Revenue dibanding bulan lalu"
         />
         <MetricCard
-          label="Pengeluaran bulan berjalan"
+          label="Beban bulan berjalan"
           value={dashboard.metrics.expenseThisMonth}
-          hint="Seluruh cash out terposting"
+          hint="COGS, expense, dan other expense"
           compact
         />
         <MetricCard
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="Saldo kas saat ini"
           value={dashboard.metrics.currentCashBalance}
-          hint="Akumulasi inflow dan outflow"
+          hint="Akumulasi all-time transaksi terposting"
         />
         <MetricCard
           label="Piutang outstanding"
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
         <TrendLineChart
           title="Tren omzet, laba, dan pengeluaran"
-          description="Pergerakan 12 bulan terakhir untuk melihat momentum tiap brand secara konsolidasi."
+          description="Pergerakan 12 bulan terakhir berdasarkan klasifikasi laba rugi yang sama dengan laporan P&L."
           data={dashboard.charts.monthly}
         />
 
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
         />
         <BrandBarChart
           title="Pengeluaran per brand"
-          description="Total cash out terposting bulan berjalan."
+          description="Total beban yang memengaruhi laba per brand bulan berjalan."
           data={dashboard.charts.expensePerBrand}
           color="#9B6A5A"
         />

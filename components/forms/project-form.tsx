@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 type Option = {
   value: string;
   label: string;
+  brandIds?: string[];
 };
 
 type ProjectFormProps = {
@@ -52,6 +53,23 @@ export function ProjectForm({
       notes: defaultValues?.notes ?? "",
     },
   });
+  const selectedBrandId = form.watch("brandId");
+  const selectedClientId = form.watch("clientId");
+  const filteredClients = selectedBrandId
+    ? clients.filter((client) => client.brandIds?.includes(selectedBrandId))
+    : clients;
+
+  useEffect(() => {
+    if (!selectedBrandId || !selectedClientId) {
+      return;
+    }
+
+    const selectedClient = clients.find((client) => client.value === selectedClientId);
+
+    if (!selectedClient || !selectedClient.brandIds?.includes(selectedBrandId)) {
+      form.setValue("clientId", "", { shouldDirty: true, shouldValidate: true });
+    }
+  }, [clients, form, selectedBrandId, selectedClientId]);
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
@@ -94,7 +112,7 @@ export function ProjectForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="value">Nilai project</Label>
-              <Input id="value" type="number" min="0" step="1000" {...form.register("value", { valueAsNumber: true })} />
+              <Input id="value" type="number" min="0" step="1" {...form.register("value", { valueAsNumber: true })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="brandId">Brand</Label>
@@ -102,7 +120,13 @@ export function ProjectForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientId">Klien</Label>
-              <Select id="clientId" options={clients} placeholder="Pilih klien" {...form.register("clientId")} />
+              <Select
+                id="clientId"
+                options={filteredClients}
+                placeholder={selectedBrandId ? "Pilih klien" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("clientId")}
+              />
             </div>
           </div>
 

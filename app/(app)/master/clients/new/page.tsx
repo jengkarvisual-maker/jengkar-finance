@@ -1,9 +1,12 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { ClientForm } from "@/components/forms/client-form";
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
+import { toOptions } from "@/lib/options";
+import { getMasterDataOptions } from "@/lib/services/master-data";
 
 export default async function NewClientPage() {
-  await requireUser();
+  const user = await requireFinanceWorkspaceUser();
+  const master = await getMasterDataOptions(user);
 
   return (
     <>
@@ -13,7 +16,9 @@ export default async function NewClientPage() {
         description="Tambahkan client baru untuk project, invoice, dan histori transaksi."
       />
 
-      <ClientForm />
+      <ClientForm
+        brands={toOptions(master.brands, (item) => item.id, (item) => item.name)}
+      />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/actions/types";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSessionToken, setAuthCookie, clearAuthCookie } from "@/lib/auth/session";
+import { FINANCE_INTERNAL_USER_EMAILS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/services/activity-log";
 import {
@@ -18,7 +19,7 @@ import {
   type ResetUserPasswordSchema,
 } from "@/lib/validations/auth";
 import { requireAdminOrOwner } from "@/lib/auth/guards";
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 
 async function buildOwnerLoginMetadata() {
   const requestHeaders = await headers();
@@ -59,6 +60,17 @@ export async function loginAction(
     return {
       ok: false,
       message: "Email belum terdaftar atau akun sedang nonaktif.",
+    };
+  }
+
+  if (
+    !FINANCE_INTERNAL_USER_EMAILS.includes(
+      user.email.toLowerCase() as (typeof FINANCE_INTERNAL_USER_EMAILS)[number],
+    )
+  ) {
+    return {
+      ok: false,
+      message: "Akun ini tidak diizinkan mengakses aplikasi Finance.",
     };
   }
 
@@ -113,7 +125,7 @@ export async function logoutAction() {
 export async function changePasswordAction(
   input: ChangePasswordSchema,
 ): Promise<ActionResult> {
-  const session = await requireUser();
+  const session = await requireFinanceWorkspaceUser();
   const parsed = changePasswordSchema.safeParse(input);
 
   if (!parsed.success) {

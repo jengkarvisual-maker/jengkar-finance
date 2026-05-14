@@ -102,7 +102,7 @@ export function AssetForm({
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="purchasePrice">Harga beli</Label>
-              <Input id="purchasePrice" type="number" min="0" step="1000" {...form.register("purchasePrice", { valueAsNumber: true })} />
+              <Input id="purchasePrice" type="number" min="0" step="1" {...form.register("purchasePrice", { valueAsNumber: true })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="usefulLifeMonths">Umur manfaat (bulan)</Label>

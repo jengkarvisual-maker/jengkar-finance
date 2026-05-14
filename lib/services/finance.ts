@@ -7,9 +7,13 @@ import { prisma } from "@/lib/prisma";
 import {
   buildDateRange,
   decimalToNumber,
+  createEmptyProfitLossBuckets,
+  finalizeProfitLossBuckets,
+  resolveProjectValueNumber,
   resolveInvoiceStatus,
   resolveScopedBrandWhere,
   resolveVendorBillStatus,
+  summarizeProfitLossTransactions,
 } from "@/lib/services/helpers";
 
 type ListInput = {
@@ -136,7 +140,7 @@ export async function recalculateProject(projectId: string) {
     0,
   );
 
-  const totalValue = decimalToNumber(project.totalValue);
+  const totalValue = resolveProjectValueNumber(project);
   const amountPaid = project.transactions
     .filter(
       (tx) =>
@@ -663,39 +667,28 @@ export async function getProfitLossReport(user: SessionUser, filters: ListInput)
         otherExpense: 0,
       };
 
-    const amountIn = decimalToNumber(tx.amountIn);
-    const amountOut = decimalToNumber(tx.amountOut);
-
-    switch (tx.account.category) {
-      case "REVENUE":
-        row.revenue += amountIn;
-        break;
-      case "COST_OF_GOODS_SOLD":
-        row.cogs += amountOut;
-        break;
-      case "EXPENSE":
-        row.expense += amountOut;
-        break;
-      case "OTHER_INCOME":
-        row.otherIncome += amountIn;
-        break;
-      case "OTHER_EXPENSE":
-        row.otherExpense += amountOut;
-        break;
-      default:
-        break;
-    }
+    const buckets = summarizeProfitLossTransactions([tx]);
+    row.revenue += buckets.revenue;
+    row.cogs += buckets.cogs;
+    row.expense += buckets.expense;
+    row.otherIncome += buckets.otherIncome;
+    row.otherExpense += buckets.otherExpense;
 
     byBrand.set(key, row);
   }
 
   const rows = Array.from(byBrand.values()).map((row) => ({
     ...row,
-    grossProfit: row.revenue - row.cogs,
-    netProfit: row.revenue - row.cogs - row.expense + row.otherIncome - row.otherExpense,
+    ...finalizeProfitLossBuckets({
+      revenue: row.revenue,
+      cogs: row.cogs,
+      expense: row.expense,
+      otherIncome: row.otherIncome,
+      otherExpense: row.otherExpense,
+    }),
   }));
 
-  const summary = rows.reduce(
+  const summaryBuckets = rows.reduce(
     (acc, row) => {
       acc.revenue += row.revenue;
       acc.cogs += row.cogs;
@@ -704,22 +697,13 @@ export async function getProfitLossReport(user: SessionUser, filters: ListInput)
       acc.otherExpense += row.otherExpense;
       return acc;
     },
-    { revenue: 0, cogs: 0, expense: 0, otherIncome: 0, otherExpense: 0 },
+    createEmptyProfitLossBuckets(),
   );
 
   return {
     range,
     rows,
-    summary: {
-      ...summary,
-      grossProfit: summary.revenue - summary.cogs,
-      netProfit:
-        summary.revenue -
-        summary.cogs -
-        summary.expense +
-        summary.otherIncome -
-        summary.otherExpense,
-    },
+    summary: finalizeProfitLossBuckets(summaryBuckets),
   };
 }
 

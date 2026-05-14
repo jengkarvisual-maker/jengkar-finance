@@ -26,6 +26,108 @@ export function decimalToNumber(
   return value.toNumber();
 }
 
+export function resolveProjectValueNumber(project: {
+  totalValue?: Prisma.Decimal | number | string | null;
+  value?: Prisma.Decimal | number | string | null;
+}) {
+  const totalValue = decimalToNumber(project.totalValue);
+  const legacyValue = decimalToNumber(project.value);
+
+  if (totalValue === 0 && legacyValue > 0) {
+    return legacyValue;
+  }
+
+  return totalValue;
+}
+
+export type ProfitLossBuckets = {
+  revenue: number;
+  cogs: number;
+  expense: number;
+  otherIncome: number;
+  otherExpense: number;
+  grossProfit: number;
+  totalExpense: number;
+  netProfit: number;
+};
+
+type ProfitLossLikeTransaction = {
+  amountIn?: Prisma.Decimal | number | string | null;
+  amountOut?: Prisma.Decimal | number | string | null;
+  account?: {
+    category?: string | null;
+  } | null;
+};
+
+export function createEmptyProfitLossBuckets(): ProfitLossBuckets {
+  return {
+    revenue: 0,
+    cogs: 0,
+    expense: 0,
+    otherIncome: 0,
+    otherExpense: 0,
+    grossProfit: 0,
+    totalExpense: 0,
+    netProfit: 0,
+  };
+}
+
+export function finalizeProfitLossBuckets(
+  buckets: Omit<ProfitLossBuckets, "grossProfit" | "totalExpense" | "netProfit">,
+): ProfitLossBuckets {
+  const grossProfit = buckets.revenue - buckets.cogs;
+  const totalExpense = buckets.cogs + buckets.expense + buckets.otherExpense;
+  const netProfit =
+    buckets.revenue -
+    buckets.cogs -
+    buckets.expense +
+    buckets.otherIncome -
+    buckets.otherExpense;
+
+  return {
+    ...buckets,
+    grossProfit,
+    totalExpense,
+    netProfit,
+  };
+}
+
+export function summarizeProfitLossTransactions(
+  transactions: ProfitLossLikeTransaction[],
+): ProfitLossBuckets {
+  const buckets = transactions.reduce(
+    (acc, tx) => {
+      const amountIn = decimalToNumber(tx.amountIn);
+      const amountOut = decimalToNumber(tx.amountOut);
+
+      switch (tx.account?.category) {
+        case "REVENUE":
+          acc.revenue += amountIn;
+          break;
+        case "COST_OF_GOODS_SOLD":
+          acc.cogs += amountOut;
+          break;
+        case "EXPENSE":
+          acc.expense += amountOut;
+          break;
+        case "OTHER_INCOME":
+          acc.otherIncome += amountIn;
+          break;
+        case "OTHER_EXPENSE":
+          acc.otherExpense += amountOut;
+          break;
+        default:
+          break;
+      }
+
+      return acc;
+    },
+    createEmptyProfitLossBuckets(),
+  );
+
+  return finalizeProfitLossBuckets(buckets);
+}
+
 export function buildDateRange(input?: {
   from?: string;
   to?: string;

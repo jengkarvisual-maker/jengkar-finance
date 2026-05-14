@@ -200,6 +200,9 @@ model Brand {
   projects         Project[]
   activityLogs     ActivityLog[]
   userAccesses     UserBrandAccess[]
+  clientLinks      BrandClient[]
+  vendorLinks      BrandVendor[]
+  paymentMethodLinks BrandPaymentMethod[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -243,6 +246,7 @@ model Client {
   projects    Project[]
   invoices    Invoice[]
   transactions Transaction[]
+  brandLinks  BrandClient[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
@@ -256,8 +260,33 @@ model Vendor {
   notes        String?
   vendorBills  VendorBill[]
   transactions Transaction[]
+  brandLinks   BrandVendor[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+}
+
+model BrandClient {
+  id        String   @id @default(cuid())
+  brandId   String
+  clientId  String
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([brandId, clientId])
+  @@index([clientId])
+}
+
+model BrandVendor {
+  id        String   @id @default(cuid())
+  brandId   String
+  vendorId  String
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([brandId, vendorId])
+  @@index([vendorId])
 }
 
 model PaymentMethod {
@@ -270,10 +299,23 @@ model PaymentMethod {
   isCash       Boolean       @default(false)
   notes        String?
   transactions Transaction[]
+  brandLinks   BrandPaymentMethod[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@index([code])
+}
+
+model BrandPaymentMethod {
+  id              String        @id @default(cuid())
+  brandId         String
+  paymentMethodId String
+  brand           Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@unique([brandId, paymentMethodId])
+  @@index([paymentMethodId])
 }
 
 model Project {

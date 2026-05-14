@@ -19,6 +19,7 @@ type Option = {
   value: string;
   label: string;
   brandId?: string;
+  brandIds?: string[];
   referenceNo?: string;
 };
 
@@ -82,11 +83,30 @@ export function TransactionForm({
 
   const selectedBrandId = form.watch("brandId");
   const selectedInvoiceId = form.watch("invoiceId");
+  const selectedClientId = form.watch("clientId");
+  const selectedVendorId = form.watch("vendorId");
+  const selectedProjectId = form.watch("projectId");
+  const selectedVendorBillId = form.watch("vendorBillId");
   const invoiceField = form.register("invoiceId");
   const hiddenReferenceField = form.register("referenceNo");
   const filteredInvoices = selectedBrandId
     ? invoices.filter((invoice) => invoice.brandId === selectedBrandId)
     : invoices;
+  const filteredClients = selectedBrandId
+    ? clients.filter((client) => client.brandIds?.includes(selectedBrandId))
+    : clients;
+  const filteredVendors = selectedBrandId
+    ? vendors.filter((vendor) => vendor.brandIds?.includes(selectedBrandId))
+    : vendors;
+  const filteredProjects = selectedBrandId
+    ? projects.filter((project) => project.brandId === selectedBrandId)
+    : projects;
+  const filteredVendorBills = selectedBrandId
+    ? vendorBills.filter((bill) => bill.brandId === selectedBrandId)
+    : vendorBills;
+  const filteredPaymentMethods = selectedBrandId
+    ? paymentMethods.filter((paymentMethod) => paymentMethod.brandIds?.includes(selectedBrandId))
+    : paymentMethods;
 
   useEffect(() => {
     if (!selectedInvoiceId) {
@@ -112,6 +132,54 @@ export function TransactionForm({
       form.setValue("referenceNo", nextReferenceNo, { shouldValidate: true });
     }
   }, [form, invoices, selectedBrandId, selectedInvoiceId]);
+
+  useEffect(() => {
+    if (!selectedBrandId) {
+      return;
+    }
+
+    const selectedClient = clients.find((client) => client.value === selectedClientId);
+    if (selectedClientId && (!selectedClient || !selectedClient.brandIds?.includes(selectedBrandId))) {
+      form.setValue("clientId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedVendor = vendors.find((vendor) => vendor.value === selectedVendorId);
+    if (selectedVendorId && (!selectedVendor || !selectedVendor.brandIds?.includes(selectedBrandId))) {
+      form.setValue("vendorId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedProject = projects.find((project) => project.value === selectedProjectId);
+    if (selectedProjectId && (!selectedProject || selectedProject.brandId !== selectedBrandId)) {
+      form.setValue("projectId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedVendorBill = vendorBills.find((bill) => bill.value === selectedVendorBillId);
+    if (selectedVendorBillId && (!selectedVendorBill || selectedVendorBill.brandId !== selectedBrandId)) {
+      form.setValue("vendorBillId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedPaymentMethod = paymentMethods.find(
+      (paymentMethod) => paymentMethod.value === form.getValues("paymentMethodId"),
+    );
+    if (
+      form.getValues("paymentMethodId") &&
+      (!selectedPaymentMethod || !selectedPaymentMethod.brandIds?.includes(selectedBrandId))
+    ) {
+      form.setValue("paymentMethodId", "", { shouldDirty: true, shouldValidate: true });
+    }
+  }, [
+    clients,
+    form,
+    paymentMethods,
+    projects,
+    selectedBrandId,
+    selectedClientId,
+    selectedProjectId,
+    selectedVendorBillId,
+    selectedVendorId,
+    vendorBills,
+    vendors,
+  ]);
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
@@ -196,34 +264,64 @@ export function TransactionForm({
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="clientId">Klien</Label>
-              <Select id="clientId" options={clients} placeholder="Opsional" {...form.register("clientId")} />
+              <Select
+                id="clientId"
+                options={filteredClients}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("clientId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vendorId">Vendor</Label>
-              <Select id="vendorId" options={vendors} placeholder="Opsional" {...form.register("vendorId")} />
+              <Select
+                id="vendorId"
+                options={filteredVendors}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("vendorId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="projectId">Project / Event</Label>
-              <Select id="projectId" options={projects} placeholder="Opsional" {...form.register("projectId")} />
+              <Select
+                id="projectId"
+                options={filteredProjects}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("projectId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="paymentMethodId">Metode pembayaran</Label>
-              <Select id="paymentMethodId" options={paymentMethods} placeholder="Opsional" {...form.register("paymentMethodId")} />
+              <Select
+                id="paymentMethodId"
+                options={filteredPaymentMethods}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("paymentMethodId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vendorBillId">Tagihan vendor terkait</Label>
-              <Select id="vendorBillId" options={vendorBills} placeholder="Opsional" {...form.register("vendorBillId")} />
+              <Select
+                id="vendorBillId"
+                options={filteredVendorBills}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("vendorBillId")}
+              />
             </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="amountIn">Nominal masuk</Label>
-              <Input id="amountIn" type="number" min="0" step="1000" {...form.register("amountIn", { valueAsNumber: true })} />
+              <Input id="amountIn" type="number" min="0" step="1" {...form.register("amountIn", { valueAsNumber: true })} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="amountOut">Nominal keluar</Label>
-              <Input id="amountOut" type="number" min="0" step="1000" {...form.register("amountOut", { valueAsNumber: true })} />
+              <Input id="amountOut" type="number" min="0" step="1" {...form.register("amountOut", { valueAsNumber: true })} />
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { PROJECT_STATUS_OPTIONS } from "@/lib/constants";
 import { toOptions } from "@/lib/options";
 import { readFilters } from "@/lib/search-params";
+import { resolveProjectValueNumber } from "@/lib/services/helpers";
 import { listProjects } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -98,7 +99,7 @@ export default async function ProjectsPage({
               <TableCell>{row.brand.name}</TableCell>
               <TableCell>{row.client.name}</TableCell>
               <TableCell>{formatDate(row.projectDate)}</TableCell>
-              <TableCell>{formatCurrency(Number(row.value))}</TableCell>
+              <TableCell>{formatCurrency(resolveProjectValueNumber(row))}</TableCell>
               <TableCell>{formatCurrency(Number(row.recognizedIncome))}</TableCell>
               <TableCell>{formatCurrency(Number(row.recognizedCost))}</TableCell>
               <TableCell>{formatCurrency(Number(row.profit))}</TableCell>

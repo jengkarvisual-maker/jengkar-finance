@@ -6,6 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { INTERNAL_APP_LINKS } from "@/lib/constants";
+import { getFinanceUserRoleLabel } from "@/lib/permissions";
 import { sidebarSections } from "@/lib/navigation";
 import type { SessionUser } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ export function Sidebar({ user }: SidebarProps) {
           <div className="mt-2 space-y-1">
             <p className="font-semibold text-foreground">{user.name}</p>
             <p className="text-sm text-muted-foreground">
-              {user.role.name} - {user.email}
+              {getFinanceUserRoleLabel(user)} - {user.email}
             </p>
           </div>
         </div>
@@ -65,7 +66,7 @@ export function Sidebar({ user }: SidebarProps) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all",
+                      "button-press flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-[0_14px_40px_-24px_rgba(47,104,72,0.95)]"
                         : "text-muted-foreground hover:bg-white/80 hover:text-foreground",
@@ -100,7 +101,7 @@ export function Sidebar({ user }: SidebarProps) {
                 <a
                   key={app.name}
                   href={app.href}
-                  className="block rounded-[24px] border border-border/70 bg-white/70 px-4 py-4 transition hover:border-primary/30 hover:bg-white/85"
+                  className="button-press block rounded-[24px] border border-border/70 bg-white/70 px-4 py-4 transition hover:border-primary/30 hover:bg-white/85"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">

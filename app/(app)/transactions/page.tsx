@@ -24,7 +24,7 @@ import {
   PAYMENT_STATUS_OPTIONS,
 } from "@/lib/constants";
 import { toOptions } from "@/lib/options";
-import { readFilters } from "@/lib/search-params";
+import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listTransactions } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -101,6 +101,10 @@ export default async function TransactionsPage({
   ]);
 
   const rows = transactions.rows as TransactionRow[];
+  const exportQuery = createSearchParams(resolvedSearchParams);
+  const exportHref = exportQuery
+    ? `/api/export/transactions?${exportQuery}`
+    : "/api/export/transactions";
 
   const defaultValues: Record<string, string | undefined> = {
     brandId: getSingleValue(resolvedSearchParams.brandId),
@@ -124,7 +128,7 @@ export default async function TransactionsPage({
         action={
           <>
             <Button asChild variant="secondary">
-              <Link href="/api/export/transactions">Export CSV</Link>
+              <Link href={exportHref}>Export CSV</Link>
             </Button>
             <Button asChild>
               <Link href="/transactions/new">Tambah transaksi</Link>

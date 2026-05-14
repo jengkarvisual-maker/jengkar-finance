@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 type Option = {
   value: string;
   label: string;
+  brandId?: string;
+  brandIds?: string[];
 };
 
 type InvoiceFormProps = {
@@ -26,6 +28,7 @@ type InvoiceFormProps = {
   brands: Option[];
   clients: Option[];
   projects: Option[];
+  isLinkedToTransactions?: boolean;
 };
 
 export function InvoiceForm({
@@ -34,6 +37,7 @@ export function InvoiceForm({
   brands,
   clients,
   projects,
+  isLinkedToTransactions = false,
 }: InvoiceFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -53,6 +57,31 @@ export function InvoiceForm({
       notes: defaultValues?.notes ?? "",
     },
   });
+  const selectedBrandId = form.watch("brandId");
+  const selectedClientId = form.watch("clientId");
+  const selectedProjectId = form.watch("projectId");
+  const filteredClients = selectedBrandId
+    ? clients.filter((client) => client.brandIds?.includes(selectedBrandId))
+    : clients;
+  const filteredProjects = selectedBrandId
+    ? projects.filter((project) => project.brandId === selectedBrandId)
+    : projects;
+
+  useEffect(() => {
+    if (!selectedBrandId) {
+      return;
+    }
+
+    const selectedClient = clients.find((client) => client.value === selectedClientId);
+    if (selectedClientId && (!selectedClient || !selectedClient.brandIds?.includes(selectedBrandId))) {
+      form.setValue("clientId", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    const selectedProject = projects.find((project) => project.value === selectedProjectId);
+    if (selectedProjectId && (!selectedProject || selectedProject.brandId !== selectedBrandId)) {
+      form.setValue("projectId", "", { shouldDirty: true, shouldValidate: true });
+    }
+  }, [clients, form, projects, selectedBrandId, selectedClientId, selectedProjectId]);
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
@@ -96,22 +125,42 @@ export function InvoiceForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientId">Klien</Label>
-              <Select id="clientId" options={clients} placeholder="Pilih klien" {...form.register("clientId")} />
+              <Select
+                id="clientId"
+                options={filteredClients}
+                placeholder={selectedBrandId ? "Pilih klien" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("clientId")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="projectId">Project</Label>
-              <Select id="projectId" options={projects} placeholder="Opsional" {...form.register("projectId")} />
+              <Select
+                id="projectId"
+                options={filteredProjects}
+                placeholder={selectedBrandId ? "Opsional" : "Pilih brand terlebih dahulu"}
+                disabled={!selectedBrandId}
+                {...form.register("projectId")}
+              />
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            DP diterima dan total pembayaran invoice sekarang selalu mengikuti transaksi kas yang ditautkan,
+            terutama transaksi bertipe <span className="font-medium text-foreground">CLIENT_DP</span> dan
+            <span className="font-medium text-foreground"> CLIENT_SETTLEMENT</span>.
+            {isLinkedToTransactions ? (
+              <span className="block pt-2">
+                Karena invoice ini sudah punya histori transaksi, perubahan brand, klien, atau project akan ditolak
+                oleh sistem.
+              </span>
+            ) : null}
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-1">
             <div className="space-y-2">
               <Label htmlFor="totalAmount">Nilai invoice</Label>
-              <Input id="totalAmount" type="number" min="0" step="1000" {...form.register("totalAmount", { valueAsNumber: true })} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="downPayment">DP diterima</Label>
-              <Input id="downPayment" type="number" min="0" step="1000" {...form.register("downPayment", { valueAsNumber: true })} />
+              <Input id="totalAmount" type="number" min="0" step="1" {...form.register("totalAmount", { valueAsNumber: true })} />
             </div>
           </div>
 

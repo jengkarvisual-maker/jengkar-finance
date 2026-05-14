@@ -28,6 +28,10 @@ export const accountSchema = z.object({
   isSystem: z.boolean().default(false),
 });
 
+const scopedBrandIdsSchema = z
+  .array(z.string().min(1))
+  .min(1, "Pilih minimal satu brand.");
+
 export const clientSchema = z.object({
   name: z.string().min(2).max(120),
   companyName: z.string().max(120).optional().nullable(),
@@ -35,9 +39,17 @@ export const clientSchema = z.object({
   phone: z.string().max(30).optional().nullable(),
   address: z.string().max(255).optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
+  brandIds: scopedBrandIdsSchema,
 });
 
-export const vendorSchema = clientSchema.extend({});
+export const vendorSchema = z.object({
+  name: z.string().min(2).max(120),
+  email: z.string().email().optional().or(z.literal("")).nullable(),
+  phone: z.string().max(30).optional().nullable(),
+  address: z.string().max(255).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+  brandIds: scopedBrandIdsSchema,
+});
 
 export const paymentMethodSchema = z.object({
   code: z.string().min(2).max(20),
@@ -47,6 +59,7 @@ export const paymentMethodSchema = z.object({
   accountNo: z.string().max(120).optional().nullable(),
   isCash: z.boolean().default(false),
   notes: z.string().max(500).optional().nullable(),
+  brandIds: scopedBrandIdsSchema,
 });
 
 export const transactionCategorySchema = z.object({

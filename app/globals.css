@@ -51,6 +51,19 @@ body {
   font-family: var(--font-manrope), sans-serif;
 }
 
+@keyframes finance-splash-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 16px 48px -24px rgba(82, 67, 33, 0.28);
+  }
+
+  50% {
+    transform: scale(1.018);
+    box-shadow: 0 20px 54px -22px rgba(82, 67, 33, 0.34);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -61,6 +74,24 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+.button-press {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    filter 140ms ease;
+}
+
+.button-press:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.button-press:disabled {
+  transform: none;
 }
 
 .glass-panel {
@@ -86,4 +117,8 @@ textarea {
 
 .soft-shadow {
   box-shadow: 0 16px 48px -24px rgba(82, 67, 33, 0.28);
+}
+
+.finance-splash-pulse {
+  animation: finance-splash-pulse 2.3s ease-in-out infinite;
 }

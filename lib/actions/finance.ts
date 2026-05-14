@@ -4,7 +4,7 @@ import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { revalidatePath } from "next/cache";
 
 import type { ActionResult } from "@/lib/actions/types";
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 import { canManageBrand } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/services/activity-log";
@@ -38,7 +38,10 @@ function assertFinanceAccess(roleKey: string) {
   }
 }
 
-function ensureBrandManageAccess(user: Awaited<ReturnType<typeof requireUser>>, brandId: string) {
+function ensureBrandManageAccess(
+  user: Awaited<ReturnType<typeof requireFinanceWorkspaceUser>>,
+  brandId: string,
+) {
   if (!canManageBrand(user, brandId)) {
     throw new Error("Kamu tidak punya izin mengubah data brand ini.");
   }
@@ -90,7 +93,7 @@ export async function upsertTransactionAction(
   input: TransactionSchema,
   id?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const parsed = transactionSchema.safeParse(input);
@@ -105,14 +108,57 @@ export async function upsertTransactionAction(
   ensureBrandManageAccess(user, parsed.data.brandId);
 
   const normalizedInvoiceId = normalizeOptional(parsed.data.invoiceId);
+  const normalizedProjectId = normalizeOptional(parsed.data.projectId);
+  const normalizedVendorBillId = normalizeOptional(parsed.data.vendorBillId);
+  const normalizedClientId = normalizeOptional(parsed.data.clientId);
+  const normalizedVendorId = normalizeOptional(parsed.data.vendorId);
 
-  const [account, category, invoice] = await Promise.all([
+  const [account, category, invoice, project, vendorBill, clientBrandLink, vendorBrandLink, paymentMethodBrandLink] = await Promise.all([
     prisma.account.findUnique({ where: { id: parsed.data.accountId } }),
     prisma.transactionCategory.findUnique({ where: { id: parsed.data.categoryId } }),
     normalizedInvoiceId
       ? prisma.invoice.findUnique({
           where: { id: normalizedInvoiceId },
-          select: { id: true, invoiceNo: true, brandId: true },
+          select: { id: true, invoiceNo: true, brandId: true, clientId: true, projectId: true },
+        })
+      : Promise.resolve(null),
+    normalizedProjectId
+      ? prisma.project.findUnique({
+          where: { id: normalizedProjectId },
+          select: { id: true, brandId: true, clientId: true },
+        })
+      : Promise.resolve(null),
+    normalizedVendorBillId
+      ? prisma.vendorBill.findUnique({
+          where: { id: normalizedVendorBillId },
+          select: { id: true, billNo: true, brandId: true, vendorId: true, projectId: true },
+        })
+      : Promise.resolve(null),
+    normalizedClientId
+      ? prisma.brandClient.findFirst({
+          where: {
+            clientId: normalizedClientId,
+            brandId: parsed.data.brandId,
+          },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+    normalizedVendorId
+      ? prisma.brandVendor.findFirst({
+          where: {
+            vendorId: normalizedVendorId,
+            brandId: parsed.data.brandId,
+          },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+    normalizeOptional(parsed.data.paymentMethodId)
+      ? prisma.brandPaymentMethod.findFirst({
+          where: {
+            paymentMethodId: normalizeOptional(parsed.data.paymentMethodId)!,
+            brandId: parsed.data.brandId,
+          },
+          select: { id: true },
         })
       : Promise.resolve(null),
   ]);
@@ -125,10 +171,95 @@ export async function upsertTransactionAction(
     return { ok: false, message: "Invoice terkait tidak ditemukan." };
   }
 
+  if (normalizedProjectId && !project) {
+    return { ok: false, message: "Project terkait tidak ditemukan." };
+  }
+
+  if (normalizedVendorBillId && !vendorBill) {
+    return { ok: false, message: "Tagihan vendor terkait tidak ditemukan." };
+  }
+
+  if (normalizedInvoiceId && normalizedVendorBillId) {
+    return {
+      ok: false,
+      message: "Satu transaksi hanya boleh ditautkan ke satu dokumen keuangan.",
+    };
+  }
+
   if (invoice && invoice.brandId !== parsed.data.brandId) {
     return {
       ok: false,
       message: "Invoice yang dipilih harus berasal dari brand yang sama dengan transaksi.",
+    };
+  }
+
+  if (project && project.brandId !== parsed.data.brandId) {
+    return {
+      ok: false,
+      message: "Project yang dipilih harus berasal dari brand yang sama dengan transaksi.",
+    };
+  }
+
+  if (vendorBill && vendorBill.brandId !== parsed.data.brandId) {
+    return {
+      ok: false,
+      message: "Tagihan vendor yang dipilih harus berasal dari brand yang sama dengan transaksi.",
+    };
+  }
+
+  if (invoice && normalizedClientId && invoice.clientId !== normalizedClientId) {
+    return {
+      ok: false,
+      message: "Klien transaksi harus sama dengan klien pada invoice yang dipilih.",
+    };
+  }
+
+  if (project && normalizedClientId && project.clientId !== normalizedClientId) {
+    return {
+      ok: false,
+      message: "Klien transaksi harus sama dengan klien pada project yang dipilih.",
+    };
+  }
+
+  if (vendorBill && normalizedVendorId && vendorBill.vendorId !== normalizedVendorId) {
+    return {
+      ok: false,
+      message: "Vendor transaksi harus sama dengan vendor pada tagihan yang dipilih.",
+    };
+  }
+
+  if (normalizedClientId && !clientBrandLink) {
+    return {
+      ok: false,
+      message: "Klien yang dipilih belum dihubungkan ke brand transaksi ini.",
+    };
+  }
+
+  if (normalizedVendorId && !vendorBrandLink) {
+    return {
+      ok: false,
+      message: "Vendor yang dipilih belum dihubungkan ke brand transaksi ini.",
+    };
+  }
+
+  if (normalizeOptional(parsed.data.paymentMethodId) && !paymentMethodBrandLink) {
+    return {
+      ok: false,
+      message: "Metode pembayaran yang dipilih belum dihubungkan ke brand transaksi ini.",
+    };
+  }
+
+  if (invoice && project && invoice.projectId && invoice.projectId !== project.id) {
+    return {
+      ok: false,
+      message: "Project transaksi harus sama dengan project yang tertaut pada invoice.",
+    };
+  }
+
+  if (vendorBill && project && vendorBill.projectId && vendorBill.projectId !== project.id) {
+    return {
+      ok: false,
+      message: "Project transaksi harus sama dengan project yang tertaut pada tagihan vendor.",
     };
   }
 
@@ -187,16 +318,16 @@ export async function upsertTransactionAction(
     categoryId: parsed.data.categoryId,
     accountId: parsed.data.accountId,
     description: parsed.data.description,
-    clientId: normalizeOptional(parsed.data.clientId),
-    vendorId: normalizeOptional(parsed.data.vendorId),
-    projectId: normalizeOptional(parsed.data.projectId),
+    clientId: normalizedClientId,
+    vendorId: normalizedVendorId,
+    projectId: normalizedProjectId,
     paymentMethodId: normalizeOptional(parsed.data.paymentMethodId),
     paymentStatus: parsed.data.paymentStatus,
     amountIn: parsed.data.amountIn,
     amountOut: parsed.data.amountOut,
     referenceNo: invoice ? normalizeOptional(invoice.invoiceNo) : normalizeOptional(parsed.data.referenceNo),
     invoiceId: normalizedInvoiceId,
-    vendorBillId: normalizeOptional(parsed.data.vendorBillId),
+    vendorBillId: normalizedVendorBillId,
     notes: normalizeOptional(parsed.data.notes),
     updatedById: user.id,
   };
@@ -249,7 +380,7 @@ export async function upsertTransactionAction(
 }
 
 export async function deleteClientAction(id: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const client = await prisma.client.findUnique({
@@ -332,7 +463,7 @@ export async function deleteClientAction(id: string): Promise<ActionResult> {
 
 
 export async function deleteTransactionAction(id: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const transaction = await prisma.transaction.findUnique({
@@ -380,7 +511,7 @@ export async function upsertInvoiceAction(
   input: InvoiceSchema,
   id?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const parsed = invoiceSchema.safeParse(input);
@@ -394,18 +525,81 @@ export async function upsertInvoiceAction(
 
   ensureBrandManageAccess(user, parsed.data.brandId);
 
+  const normalizedProjectId = normalizeOptional(parsed.data.projectId);
   const totalAmount = parsed.data.totalAmount;
-  const downPayment = parsed.data.downPayment;
-  const amountPaid = downPayment;
   const dueDate = new Date(parsed.data.dueDate);
-  const outstandingAmount = Math.max(totalAmount - amountPaid, 0);
+  const [project, existingInvoice, clientBrandLink] = await Promise.all([
+    normalizedProjectId
+      ? prisma.project.findUnique({
+          where: { id: normalizedProjectId },
+          select: { id: true, brandId: true, clientId: true },
+        })
+      : Promise.resolve(null),
+    id
+      ? prisma.invoice.findUnique({
+          where: { id },
+          select: {
+            brandId: true,
+            clientId: true,
+            projectId: true,
+            _count: { select: { transactions: true } },
+          },
+        })
+      : Promise.resolve(null),
+    prisma.brandClient.findFirst({
+      where: {
+        clientId: parsed.data.clientId,
+        brandId: parsed.data.brandId,
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  if (normalizedProjectId && !project) {
+    return { ok: false, message: "Project terkait tidak ditemukan." };
+  }
+
+  if (project && project.brandId !== parsed.data.brandId) {
+    return {
+      ok: false,
+      message: "Project yang dipilih harus berasal dari brand yang sama dengan invoice.",
+    };
+  }
+
+  if (project && project.clientId !== parsed.data.clientId) {
+    return {
+      ok: false,
+      message: "Project yang dipilih harus milik klien yang sama dengan invoice.",
+    };
+  }
+
+  if (!clientBrandLink) {
+    return {
+      ok: false,
+      message: "Klien yang dipilih belum dihubungkan ke brand invoice ini.",
+    };
+  }
+
+  if (
+    existingInvoice &&
+    existingInvoice._count.transactions > 0 &&
+    (
+      existingInvoice.brandId !== parsed.data.brandId ||
+      existingInvoice.clientId !== parsed.data.clientId ||
+      (existingInvoice.projectId ?? null) !== (normalizedProjectId ?? null)
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        "Brand, klien, dan project invoice yang sudah punya transaksi tidak bisa diubah.",
+    };
+  }
+
+  const downPayment = 0;
+  const amountPaid = 0;
+  const outstandingAmount = totalAmount;
   const status = resolveInvoiceStatus(totalAmount, amountPaid, dueDate);
-  const existingInvoice = id
-    ? await prisma.invoice.findUnique({
-        where: { id },
-        select: { _count: { select: { transactions: true } } },
-      })
-    : null;
 
   const invoice = id
     ? await prisma.invoice.update({
@@ -414,7 +608,7 @@ export async function upsertInvoiceAction(
           invoiceDate: new Date(parsed.data.invoiceDate),
           brandId: parsed.data.brandId,
           clientId: parsed.data.clientId,
-          projectId: normalizeOptional(parsed.data.projectId),
+          projectId: normalizedProjectId,
           totalAmount,
           downPayment,
           amountPaid,
@@ -431,7 +625,7 @@ export async function upsertInvoiceAction(
           invoiceDate: new Date(parsed.data.invoiceDate),
           brandId: parsed.data.brandId,
           clientId: parsed.data.clientId,
-          projectId: normalizeOptional(parsed.data.projectId),
+          projectId: normalizedProjectId,
           totalAmount,
           downPayment,
           amountPaid,
@@ -466,7 +660,7 @@ export async function upsertVendorBillAction(
   input: VendorBillSchema,
   id?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const parsed = vendorBillSchema.safeParse(input);
@@ -480,17 +674,72 @@ export async function upsertVendorBillAction(
 
   ensureBrandManageAccess(user, parsed.data.brandId);
 
+  const normalizedProjectId = normalizeOptional(parsed.data.projectId);
   const totalAmount = parsed.data.totalAmount;
   const amountPaid = 0;
   const dueDate = new Date(parsed.data.dueDate);
   const outstandingAmount = totalAmount;
   const status = resolveVendorBillStatus(totalAmount, amountPaid, dueDate);
-  const existingBill = id
-    ? await prisma.vendorBill.findUnique({
-        where: { id },
-        select: { _count: { select: { transactions: true } } },
-      })
-    : null;
+  const [project, existingBill, vendorBrandLink] = await Promise.all([
+    normalizedProjectId
+      ? prisma.project.findUnique({
+          where: { id: normalizedProjectId },
+          select: { id: true, brandId: true },
+        })
+      : Promise.resolve(null),
+    id
+      ? prisma.vendorBill.findUnique({
+          where: { id },
+          select: {
+            vendorId: true,
+            brandId: true,
+            projectId: true,
+            _count: { select: { transactions: true } },
+          },
+        })
+      : Promise.resolve(null),
+    prisma.brandVendor.findFirst({
+      where: {
+        vendorId: parsed.data.vendorId,
+        brandId: parsed.data.brandId,
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  if (normalizedProjectId && !project) {
+    return { ok: false, message: "Project terkait tidak ditemukan." };
+  }
+
+  if (project && project.brandId !== parsed.data.brandId) {
+    return {
+      ok: false,
+      message: "Project yang dipilih harus berasal dari brand yang sama dengan tagihan vendor.",
+    };
+  }
+
+  if (!vendorBrandLink) {
+    return {
+      ok: false,
+      message: "Vendor yang dipilih belum dihubungkan ke brand tagihan ini.",
+    };
+  }
+
+  if (
+    existingBill &&
+    existingBill._count.transactions > 0 &&
+    (
+      existingBill.vendorId !== parsed.data.vendorId ||
+      existingBill.brandId !== parsed.data.brandId ||
+      (existingBill.projectId ?? null) !== (normalizedProjectId ?? null)
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        "Vendor, brand, dan project tagihan yang sudah punya transaksi tidak bisa diubah.",
+    };
+  }
 
   const bill = id
     ? await prisma.vendorBill.update({
@@ -499,7 +748,7 @@ export async function upsertVendorBillAction(
           billDate: new Date(parsed.data.billDate),
           vendorId: parsed.data.vendorId,
           brandId: parsed.data.brandId,
-          projectId: normalizeOptional(parsed.data.projectId),
+          projectId: normalizedProjectId,
           description: parsed.data.description,
           totalAmount,
           dueDate,
@@ -516,7 +765,7 @@ export async function upsertVendorBillAction(
           billDate: new Date(parsed.data.billDate),
           vendorId: parsed.data.vendorId,
           brandId: parsed.data.brandId,
-          projectId: normalizeOptional(parsed.data.projectId),
+          projectId: normalizedProjectId,
           description: parsed.data.description,
           totalAmount,
           dueDate,
@@ -580,7 +829,7 @@ export async function upsertAssetAction(
   input: AssetSchema,
   id?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const parsed = assetSchema.safeParse(input);
@@ -660,7 +909,7 @@ export async function upsertProjectAction(
   input: ProjectSchema,
   id?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   const parsed = projectSchema.safeParse(input);
@@ -674,6 +923,21 @@ export async function upsertProjectAction(
 
   ensureBrandManageAccess(user, parsed.data.brandId);
 
+  const clientBrandLink = await prisma.brandClient.findFirst({
+    where: {
+      clientId: parsed.data.clientId,
+      brandId: parsed.data.brandId,
+    },
+    select: { id: true },
+  });
+
+  if (!clientBrandLink) {
+    return {
+      ok: false,
+      message: "Klien yang dipilih belum dihubungkan ke brand project ini.",
+    };
+  }
+
   const project = id
     ? await prisma.project.update({
         where: { id },
@@ -682,6 +946,7 @@ export async function upsertProjectAction(
           brandId: parsed.data.brandId,
           clientId: parsed.data.clientId,
           projectDate: new Date(parsed.data.projectDate),
+          value: parsed.data.value,
           totalValue: parsed.data.value,
           status: parsed.data.status,
           notes: normalizeOptional(parsed.data.notes),
@@ -694,6 +959,7 @@ export async function upsertProjectAction(
           brandId: parsed.data.brandId,
           clientId: parsed.data.clientId,
           projectDate: new Date(parsed.data.projectDate),
+          value: parsed.data.value,
           totalValue: parsed.data.value,
           status: parsed.data.status,
           notes: normalizeOptional(parsed.data.notes),
@@ -718,7 +984,7 @@ export async function upsertProjectAction(
 }
 
 async function deleteRecord(entity: "Invoice" | "VendorBill" | "Asset" | "Project", id: string) {
-  const user = await requireUser();
+  const user = await requireFinanceWorkspaceUser();
   assertFinanceAccess(user.role.key);
 
   switch (entity) {

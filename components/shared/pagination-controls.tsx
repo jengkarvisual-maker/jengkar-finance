@@ -37,7 +37,7 @@ export function PaginationControls({ page, pageSize, total }: Props) {
           type="button"
           onClick={() => goToPage(page - 1)}
           disabled={page <= 1}
-          className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+          className="button-press rounded-md border px-3 py-2 text-sm disabled:opacity-50"
         >
           Prev
         </button>
@@ -50,7 +50,7 @@ export function PaginationControls({ page, pageSize, total }: Props) {
           type="button"
           onClick={() => goToPage(page + 1)}
           disabled={page >= totalPages}
-          className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+          className="button-press rounded-md border px-3 py-2 text-sm disabled:opacity-50"
         >
           Next
         </button>

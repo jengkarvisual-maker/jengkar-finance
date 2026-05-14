@@ -57,6 +57,9 @@ async function main() {
   await prisma.assetDepreciation.deleteMany();
   await prisma.activityLog.deleteMany();
   await prisma.transaction.deleteMany();
+  await prisma.brandPaymentMethod.deleteMany();
+  await prisma.brandClient.deleteMany();
+  await prisma.brandVendor.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.vendorBill.deleteMany();
   await prisma.asset.deleteMany();
@@ -152,11 +155,15 @@ async function main() {
   await prisma.paymentMethod.createMany({
     data: [
       { code: "CASH", name: "Cash", type: "Cash", isCash: true },
-      { code: "BCA", name: "Transfer BCA", type: "Bank Transfer", accountName: "Rumah Jengkar", accountNo: "1234567890" },
-      { code: "BRI", name: "Transfer BRI PHS", type: "Bank Transfer" },
-      { code: "BCA", name: "Transfer BCA Gepy 1231", type: "Bank Transfer" },
-      { code: "BCA", name: "Transfer BCA Puy", type: "Bank Transfer" },
-      { code: "MANDIRI", name: "Transfer Mandiri", type: "Bank Transfer", accountName: "Rumah Jengkar", accountNo: "0987654321" },
+      { code: "BRI", name: "BRI PHS", type: "Bank Transfer" },
+      { code: "BCA", name: "BCA Gepy 1231", type: "Bank Transfer" },
+      { code: "JENIUS", name: "Jenius Gepy", type: "Bank Transfer", accountName: "Gepy" },
+      { code: "JENIUS", name: "Jenius Puy", type: "Bank Transfer", accountName: "Puy" },
+      { code: "BCA", name: "BCA Gepy 702", type: "Bank Transfer", accountName: "Gepy", accountNo: "702" },
+      { code: "BCA", name: "BCA Puy 901", type: "Bank Transfer", accountName: "Puy", accountNo: "901" },
+      { code: "BCA", name: "BCA Puy 229", type: "Bank Transfer", accountName: "Puy", accountNo: "229" },
+      { code: "BCA", name: "BCA Puy 1760", type: "Bank Transfer", accountName: "Puy", accountNo: "1760" },
+      { code: "MANDIRI", name: "Mandiri", type: "Bank Transfer", accountName: "Rumah Jengkar", accountNo: "0987654321" },
       { code: "QRIS", name: "QRIS", type: "Digital", isCash: false },
     ],
   });
@@ -224,7 +231,7 @@ async function main() {
       email: "finance@rumahjengkar.com",
       passwordHash: financePassword,
       roleId: roleMap.FINANCE_STAFF,
-      allBrandsAccess: false,
+      allBrandsAccess: true,
     },
   });
 
@@ -558,30 +565,30 @@ async function main() {
   }
 
   const transactionSeeds = [
-    ["TRX-20260101-0001", "2026-01-08", "TPW", "CLIENT_DP", "CAT-DP", "4101", "DP Wedding Andra & Nisa", "Andra & Nisa", null, "Wedding Andra & Nisa", "Transfer BCA", 5000000, 0, "INV-202601-0001"],
-    ["TRX-20260112-0002", "2026-01-12", "TPW", "PRODUCTION_COST", "CAT-PROD", "5101", "Booking vendor dokumentasi tambahan", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "Transfer BCA", 0, 1500000, null],
-    ["TRX-20260115-0003", "2026-01-15", "JMD", "CLIENT_DP", "CAT-DP", "4101", "DP Campaign Harmoni Rasa", "PT Harmoni Rasa", null, "Campaign Harmoni Rasa", "Transfer Mandiri", 6000000, 0, "INV-202601-0004"],
-    ["TRX-20260122-0004", "2026-01-22", "JVS", "MARKETING", "CAT-MKT", "6101", "Iklan Instagram lead visual", null, "Digital Ads Jogja", "Visual Social Kit Q2", "Transfer BCA", 0, 850000, null],
-    ["TRX-20260203-0005", "2026-02-03", "BBP", "CLIENT_DP", "CAT-DP", "4101", "DP Bridal Package Raka & Caca", "Raka & Caca", null, "Bridal Package Raka & Caca", "Transfer BCA", 3000000, 0, "INV-202602-0002"],
-    ["TRX-20260204-0006", "2026-02-04", "BBP", "PRODUCTION_COST", "CAT-PROD", "5101", "DP vendor makeup artist", null, "Vendor Makeup Partner", "Bridal Package Raka & Caca", "Transfer BCA", 0, 1500000, null],
-    ["TRX-20260207-0007", "2026-02-07", "TPW", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pembayaran awal lighting wedding", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "Transfer BCA", 0, 1000000, null],
-    ["TRX-20260215-0008", "2026-02-15", "JMD", "SALARY", "CAT-SAL", "6102", "Honor tim produksi Februari", null, null, "Campaign Harmoni Rasa", "Transfer BCA", 0, 2200000, null],
-    ["TRX-20260218-0009", "2026-02-18", "PHS", "RENT", "CAT-RENT", "6105", "Sewa ruko studio bulan Februari", null, null, null, "Transfer Mandiri", 0, 3000000, null],
-    ["TRX-20260228-0010", "2026-02-28", "JVS", "EQUIPMENT_PURCHASE", "CAT-EQUIP", "1201", "Pembelian lighting kit baru", null, "CV Sinar Lighting", null, "Transfer BCA", 0, 9500000, null],
-    ["TRX-20260301-0011", "2026-03-01", "BBP", "CLIENT_SETTLEMENT", "CAT-SETTLE", "4101", "Pelunasan Bridal Package", "Raka & Caca", null, "Bridal Package Raka & Caca", "Transfer BCA", 4500000, 0, "INV-202602-0002"],
-    ["TRX-20260304-0012", "2026-03-04", "TPW", "CLIENT_SETTLEMENT", "CAT-SETTLE", "4101", "Pelunasan tahap 2 Wedding Andra & Nisa", "Andra & Nisa", null, "Wedding Andra & Nisa", "Transfer BCA", 10000000, 0, "INV-202601-0001"],
-    ["TRX-20260305-0013", "2026-03-05", "TPW", "PRODUCTION_COST", "CAT-PROD", "5101", "Pelunasan vendor lighting", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "Transfer BCA", 0, 2000000, null],
-    ["TRX-20260312-0014", "2026-03-12", "JVS", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pelunasan iklan digital", null, "Digital Ads Jogja", "Visual Social Kit Q2", "Transfer BCA", 0, 1200000, null],
+    ["TRX-20260101-0001", "2026-01-08", "TPW", "CLIENT_DP", "CAT-DP", "4101", "DP Wedding Andra & Nisa", "Andra & Nisa", null, "Wedding Andra & Nisa", "BCA Gepy 702", 5000000, 0, "INV-202601-0001"],
+    ["TRX-20260112-0002", "2026-01-12", "TPW", "PRODUCTION_COST", "CAT-PROD", "5101", "Booking vendor dokumentasi tambahan", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "BCA Gepy 702", 0, 1500000, null],
+    ["TRX-20260115-0003", "2026-01-15", "JMD", "CLIENT_DP", "CAT-DP", "4101", "DP Campaign Harmoni Rasa", "PT Harmoni Rasa", null, "Campaign Harmoni Rasa", "Mandiri", 6000000, 0, "INV-202601-0004"],
+    ["TRX-20260122-0004", "2026-01-22", "JVS", "MARKETING", "CAT-MKT", "6101", "Iklan Instagram lead visual", null, "Digital Ads Jogja", "Visual Social Kit Q2", "BCA Gepy 702", 0, 850000, null],
+    ["TRX-20260203-0005", "2026-02-03", "BBP", "CLIENT_DP", "CAT-DP", "4101", "DP Bridal Package Raka & Caca", "Raka & Caca", null, "Bridal Package Raka & Caca", "BCA Gepy 702", 3000000, 0, "INV-202602-0002"],
+    ["TRX-20260204-0006", "2026-02-04", "BBP", "PRODUCTION_COST", "CAT-PROD", "5101", "DP vendor makeup artist", null, "Vendor Makeup Partner", "Bridal Package Raka & Caca", "BCA Gepy 702", 0, 1500000, null],
+    ["TRX-20260207-0007", "2026-02-07", "TPW", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pembayaran awal lighting wedding", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "BCA Gepy 702", 0, 1000000, null],
+    ["TRX-20260215-0008", "2026-02-15", "JMD", "SALARY", "CAT-SAL", "6102", "Honor tim produksi Februari", null, null, "Campaign Harmoni Rasa", "BCA Gepy 702", 0, 2200000, null],
+    ["TRX-20260218-0009", "2026-02-18", "PHS", "RENT", "CAT-RENT", "6105", "Sewa ruko studio bulan Februari", null, null, null, "Mandiri", 0, 3000000, null],
+    ["TRX-20260228-0010", "2026-02-28", "JVS", "EQUIPMENT_PURCHASE", "CAT-EQUIP", "1201", "Pembelian lighting kit baru", null, "CV Sinar Lighting", null, "BCA Gepy 702", 0, 9500000, null],
+    ["TRX-20260301-0011", "2026-03-01", "BBP", "CLIENT_SETTLEMENT", "CAT-SETTLE", "4101", "Pelunasan Bridal Package", "Raka & Caca", null, "Bridal Package Raka & Caca", "BCA Gepy 702", 4500000, 0, "INV-202602-0002"],
+    ["TRX-20260304-0012", "2026-03-04", "TPW", "CLIENT_SETTLEMENT", "CAT-SETTLE", "4101", "Pelunasan tahap 2 Wedding Andra & Nisa", "Andra & Nisa", null, "Wedding Andra & Nisa", "BCA Gepy 702", 10000000, 0, "INV-202601-0001"],
+    ["TRX-20260305-0013", "2026-03-05", "TPW", "PRODUCTION_COST", "CAT-PROD", "5101", "Pelunasan vendor lighting", null, "CV Sinar Lighting", "Wedding Andra & Nisa", "BCA Gepy 702", 0, 2000000, null],
+    ["TRX-20260312-0014", "2026-03-12", "JVS", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pelunasan iklan digital", null, "Digital Ads Jogja", "Visual Social Kit Q2", "BCA Gepy 702", 0, 1200000, null],
     ["TRX-20260315-0015", "2026-03-15", "JMD", "TRANSPORT", "CAT-TRN", "6103", "Transport crew shooting", null, "Sewa Mobil Event", "Campaign Harmoni Rasa", "Cash", 0, 650000, null],
-    ["TRX-20260318-0016", "2026-03-18", "JVS", "INCOME", "CAT-INCOME", "4101", "Fee visual social kit Maret", "PT Harmoni Rasa", null, "Visual Social Kit Q2", "Transfer Mandiri", 9500000, 0, null],
-    ["TRX-20260320-0017", "2026-03-20", "WAJ", "CLIENT_DP", "CAT-DP", "4101", "DP attire Dimas & Niken", "Dimas & Niken", null, "Attire Dimas & Niken", "Transfer BCA", 4000000, 0, "INV-202603-0005"],
-    ["TRX-20260321-0018", "2026-03-21", "WAJ", "PRODUCTION_COST", "CAT-PROD", "5101", "Pembelian bahan attire", null, "Konveksi Wardrobe Prima", "Attire Dimas & Niken", "Transfer BCA", 0, 1000000, null],
-    ["TRX-20260325-0019", "2026-03-25", "JVS", "UTILITY", "CAT-UTL", "6104", "Internet dan cloud tools", null, null, null, "Transfer Mandiri", 0, 475000, null],
+    ["TRX-20260318-0016", "2026-03-18", "JVS", "INCOME", "CAT-INCOME", "4101", "Fee visual social kit Maret", "PT Harmoni Rasa", null, "Visual Social Kit Q2", "Mandiri", 9500000, 0, null],
+    ["TRX-20260320-0017", "2026-03-20", "WAJ", "CLIENT_DP", "CAT-DP", "4101", "DP attire Dimas & Niken", "Dimas & Niken", null, "Attire Dimas & Niken", "BCA Gepy 702", 4000000, 0, "INV-202603-0005"],
+    ["TRX-20260321-0018", "2026-03-21", "WAJ", "PRODUCTION_COST", "CAT-PROD", "5101", "Pembelian bahan attire", null, "Konveksi Wardrobe Prima", "Attire Dimas & Niken", "BCA Gepy 702", 0, 1000000, null],
+    ["TRX-20260325-0019", "2026-03-25", "JVS", "UTILITY", "CAT-UTL", "6104", "Internet dan cloud tools", null, null, null, "Mandiri", 0, 475000, null],
     ["TRX-20260328-0020", "2026-03-28", "PHS", "INCOME", "CAT-INCOME", "4101", "Booking studio keluarga", "Studio Keluarga Harsa", null, "Family Studio Session", "QRIS", 1000000, 0, "INV-202603-0003"],
-    ["TRX-20260401-0021", "2026-04-01", "BBP", "SALARY", "CAT-SAL", "6102", "Gaji tim makeup awal April", null, null, null, "Transfer BCA", 0, 1800000, null],
-    ["TRX-20260402-0022", "2026-04-02", "WAJ", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pembayaran tahap 1 konveksi", null, "Konveksi Wardrobe Prima", "Attire Dimas & Niken", "Transfer BCA", 0, 500000, null],
+    ["TRX-20260401-0021", "2026-04-01", "BBP", "SALARY", "CAT-SAL", "6102", "Gaji tim makeup awal April", null, null, null, "BCA Gepy 702", 0, 1800000, null],
+    ["TRX-20260402-0022", "2026-04-02", "WAJ", "VENDOR_PAYMENT", "CAT-VPAY", "2101", "Pembayaran tahap 1 konveksi", null, "Konveksi Wardrobe Prima", "Attire Dimas & Niken", "BCA Gepy 702", 0, 500000, null],
     ["TRX-20260403-0023", "2026-04-03", "TPW", "TRANSPORT", "CAT-TRN", "6103", "Transport meeting client", null, null, "Wedding Andra & Nisa", "Cash", 0, 250000, null],
-    ["TRX-20260404-0024", "2026-04-04", "JMD", "MARKETING", "CAT-MKT", "6101", "Retargeting ads campaign April", null, "Digital Ads Jogja", "Campaign Harmoni Rasa", "Transfer BCA", 0, 900000, null],
+    ["TRX-20260404-0024", "2026-04-04", "JMD", "MARKETING", "CAT-MKT", "6101", "Retargeting ads campaign April", null, "Digital Ads Jogja", "Campaign Harmoni Rasa", "BCA Gepy 702", 0, 900000, null],
   ] as const;
 
   for (const seed of transactionSeeds) {
@@ -620,6 +627,94 @@ async function main() {
       },
     });
   }
+
+  const brandClientLinks = [
+    ...projects.map((project) => ({
+      brandId: project.brandId,
+      clientId: project.clientId,
+    })),
+    ...invoices.map((invoice) => ({
+      brandId: invoice.brandId,
+      clientId: invoice.clientId,
+    })),
+    ...(
+      await prisma.transaction.findMany({
+        where: {
+          clientId: {
+            not: null,
+          },
+        },
+        select: {
+          brandId: true,
+          clientId: true,
+        },
+      })
+    )
+      .filter((item): item is { brandId: string; clientId: string } => Boolean(item.clientId))
+      .map((item) => ({
+        brandId: item.brandId,
+        clientId: item.clientId,
+      })),
+  ];
+
+  await prisma.brandClient.createMany({
+    data: brandClientLinks,
+    skipDuplicates: true,
+  });
+
+  const brandVendorLinks = [
+    ...bills.map((bill) => ({
+      brandId: bill.brandId,
+      vendorId: bill.vendorId,
+    })),
+    ...(
+      await prisma.transaction.findMany({
+        where: {
+          vendorId: {
+            not: null,
+          },
+        },
+        select: {
+          brandId: true,
+          vendorId: true,
+        },
+      })
+    )
+      .filter((item): item is { brandId: string; vendorId: string } => Boolean(item.vendorId))
+      .map((item) => ({
+        brandId: item.brandId,
+        vendorId: item.vendorId,
+      })),
+  ];
+
+  await prisma.brandVendor.createMany({
+    data: brandVendorLinks,
+    skipDuplicates: true,
+  });
+
+  const brandPaymentMethodLinks = (
+    await prisma.transaction.findMany({
+      where: {
+        paymentMethodId: {
+          not: null,
+        },
+      },
+      select: {
+        brandId: true,
+        paymentMethodId: true,
+      },
+    })
+  )
+    .filter((item): item is { brandId: string; paymentMethodId: string } => Boolean(item.paymentMethodId))
+    .map((item) => ({
+      brandId: item.brandId,
+      paymentMethodId: item.paymentMethodId,
+    }));
+
+  await prisma.brandPaymentMethod.createMany({
+    data: brandPaymentMethodLinks,
+    skipDuplicates: true,
+  });
 
   for (const invoice of invoices) {
     const linkedTransactions = await prisma.transaction.findMany({

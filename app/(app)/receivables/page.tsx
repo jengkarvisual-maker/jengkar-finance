@@ -3,7 +3,7 @@ import Link from "next/link";
 import { deleteInvoiceAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
-import { readFilters } from "@/lib/search-params";
+import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listInvoices } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -45,6 +45,10 @@ export default async function ReceivablesPage({
     getMasterDataOptions(user),
     listInvoices(user, filters),
   ]);
+  const exportQuery = createSearchParams(rawSearchParams);
+  const exportHref = exportQuery
+    ? `/api/export/receivables?${exportQuery}`
+    : "/api/export/receivables";
 
   return (
     <>
@@ -55,7 +59,7 @@ export default async function ReceivablesPage({
         action={
           <>
             <Button asChild variant="secondary">
-              <Link href="/api/export/receivables">Export CSV</Link>
+              <Link href={exportHref}>Export CSV</Link>
             </Button>
             <Button asChild>
               <Link href="/receivables/new">Tambah invoice</Link>
@@ -72,7 +76,7 @@ export default async function ReceivablesPage({
           type="text"
           name="q"
           defaultValue={defaultValues.q}
-          placeholder="Cari nomor, deskripsi, client, vendor, atau project"
+          placeholder="Cari nomor, klien, atau project"
           className="min-w-[260px] flex-1 rounded-2xl border border-border bg-background px-4 py-2 text-sm outline-none"
         />
 

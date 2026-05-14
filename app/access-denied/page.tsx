@@ -27,14 +27,14 @@ export default async function AccessDeniedPage() {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            className="inline-flex h-12 items-center justify-center rounded-full border border-border/70 bg-white px-5 text-sm font-semibold text-foreground transition hover:border-primary/25 hover:bg-primary/5"
+            className="button-press inline-flex h-12 items-center justify-center rounded-full border border-border/70 bg-white px-5 text-sm font-semibold text-foreground transition hover:border-primary/25 hover:bg-primary/5"
             href="https://rumahjengkar.com"
           >
             Kembali ke portal
           </Link>
           <form action={logoutAction}>
             <button
-              className="inline-flex h-12 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90"
+              className="button-press inline-flex h-12 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:bg-foreground/90"
               type="submit"
             >
               Keluar dari akun ini

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentSession } from "@/lib/auth/session";
 import { toCsv } from "@/lib/csv";
+import { canAccessFinanceWorkspace } from "@/lib/permissions";
 import { listTransactions } from "@/lib/services/finance";
 
 function getBrandValue(row: { brandId?: string | null } & Record<string, unknown>) {
@@ -18,11 +19,30 @@ function getBrandValue(row: { brandId?: string | null } & Record<string, unknown
   return row.brandId ?? "";
 }
 
+function getSearchParamValue(
+  searchParams: URLSearchParams,
+  ...keys: string[]
+) {
+  for (const key of keys) {
+    const value = searchParams.get(key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export async function GET(request: Request) {
   const user = await getCurrentSession();
 
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!canAccessFinanceWorkspace(user)) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -31,8 +51,13 @@ export async function GET(request: Request) {
     brandId: searchParams.get("brandId") ?? undefined,
     from: searchParams.get("from") ?? undefined,
     to: searchParams.get("to") ?? undefined,
-    query: searchParams.get("query") ?? undefined,
+    query: getSearchParamValue(searchParams, "query", "q", "search"),
     status: searchParams.get("status") ?? undefined,
+    accountCategory: getSearchParamValue(
+      searchParams,
+      "accountCategory",
+      "category",
+    ),
     page: 1,
     pageSize: 10000,
   });

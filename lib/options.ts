@@ -1,3 +1,11 @@
+export type SelectOption = {
+  value: string;
+  label: string;
+  brandId?: string;
+  brandIds?: string[];
+  referenceNo?: string;
+};
+
 export function toOptions<T>(
   items: T[] = [],
   value: (item: T) => string,
@@ -6,6 +14,19 @@ export function toOptions<T>(
   return items.map((item) => ({
     value: value(item),
     label: label(item),
+  }));
+}
+
+export function toMetaOptions<T>(
+  items: T[] = [],
+  value: (item: T) => string,
+  label: (item: T) => string,
+  meta: (item: T) => Omit<SelectOption, "value" | "label">,
+): SelectOption[] {
+  return items.map((item) => ({
+    value: value(item),
+    label: label(item),
+    ...meta(item),
   }));
 }
 

@@ -2,7 +2,7 @@ import { ProjectForm } from "@/components/forms/project-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { PROJECT_STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth/session";
-import { toOptions } from "@/lib/options";
+import { toMetaOptions, toOptions } from "@/lib/options";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 
 export default async function NewProjectPage() {
@@ -19,7 +19,9 @@ export default async function NewProjectPage() {
 
       <ProjectForm
         brands={toOptions(master.brands, (item) => item.id, (item) => item.name)}
-        clients={toOptions(master.clients, (item) => item.id, (item) => item.name)}
+        clients={toMetaOptions(master.clients, (item) => item.id, (item) => item.name, (item) => ({
+          brandIds: item.brandLinks.map((link) => link.brandId),
+        }))}
         statuses={PROJECT_STATUS_OPTIONS.map((item) => ({
           label: item.label,
           value: item.value,

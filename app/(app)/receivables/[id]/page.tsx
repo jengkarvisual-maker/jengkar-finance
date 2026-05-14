@@ -45,7 +45,7 @@ export default async function ReceivableDetailPage({
     </Button>
 
     
-    <DeleteButton action={deleteInvoiceAction} id={invoice.id} />
+    <DeleteButton action={deleteInvoiceAction} id={invoice.id} redirectTo="/receivables" />
   </>
 }
       />

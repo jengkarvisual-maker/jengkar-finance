@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import { PageHeader } from "@/components/shared/page-header";
 import { QueryFilters } from "@/components/shared/query-filters";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,7 +15,7 @@ import {
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
 import { toOptions } from "@/lib/options";
-import { readFilters } from "@/lib/search-params";
+import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listInvoices } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -42,12 +45,20 @@ export default async function ReceivableReportPage({
     getMasterDataOptions(user),
     listInvoices(user, filters),
   ]);
+  const exportQuery = createSearchParams(resolvedSearchParams);
+  const exportHref = exportQuery
+    ? `/api/export/receivables?${exportQuery}`
+    : "/api/export/receivables";
 
   const defaultValues: Record<string, string | undefined> = {
     brandId: getSingleValue(resolvedSearchParams.brandId),
     status: getSingleValue(resolvedSearchParams.status),
-    page: getSingleValue(resolvedSearchParams.page),
-    pageSize: getSingleValue(resolvedSearchParams.pageSize),
+    query:
+      getSingleValue(resolvedSearchParams.query) ??
+      getSingleValue(resolvedSearchParams.q) ??
+      getSingleValue(resolvedSearchParams.search),
+    from: getSingleValue(resolvedSearchParams.from),
+    to: getSingleValue(resolvedSearchParams.to),
   };
 
   return (
@@ -56,6 +67,11 @@ export default async function ReceivableReportPage({
         eyebrow="Laporan"
         title="Rekap piutang"
         description="Filter invoice berdasarkan brand, status, dan periode untuk follow-up collection."
+        action={
+          <Button asChild variant="secondary">
+            <Link href={exportHref}>Export CSV</Link>
+          </Button>
+        }
       />
 
       <QueryFilters

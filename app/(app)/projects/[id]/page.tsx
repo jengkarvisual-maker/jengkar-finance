@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { deleteProjectAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
+import { resolveProjectValueNumber } from "@/lib/services/helpers";
 import { getProjectById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ export default async function ProjectDetailPage({
             <Button asChild variant="secondary">
               <Link href={`/projects/${project.id}/edit`}>Edit project</Link>
             </Button>
-            <DeleteButton action={deleteProjectAction} id={project.id} />
+            <DeleteButton action={deleteProjectAction} id={project.id} redirectTo="/projects" />
           </>
         }
       />
@@ -48,7 +49,7 @@ export default async function ProjectDetailPage({
             <p>Klien: {project.client.name}</p>
             <p>Tanggal project: {formatDate(project.projectDate)}</p>
             <p>Status: {project.status}</p>
-            <p>Nilai project: {formatCurrency(Number(project.value))}</p>
+            <p>Nilai project: {formatCurrency(resolveProjectValueNumber(project))}</p>
             <p>Pendapatan project: {formatCurrency(Number(project.recognizedIncome))}</p>
             <p>Biaya project: {formatCurrency(Number(project.recognizedCost))}</p>
             <p>Profit project: {formatCurrency(Number(project.profit))}</p>

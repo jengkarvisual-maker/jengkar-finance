@@ -1,5 +1,9 @@
 export const APP_NAME = "RUMAH JENGKAR FINANCE";
 export const APP_DOMAIN = "https://finance.rumahjengkar.com";
+export const FINANCE_INTERNAL_USER_EMAILS = [
+  "owner@rumahjengkar.com",
+  "finance@rumahjengkar.com",
+] as const;
 
 export type InternalAppLink = {
   name: string;

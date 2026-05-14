@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/lib/permissions";
 import {
   buildDateRange,
+  createEmptyProfitLossBuckets,
   decimalToNumber,
+  finalizeProfitLossBuckets,
   getLast12MonthsSeries,
   resolveScopedBrandWhere,
+  summarizeProfitLossTransactions,
 } from "@/lib/services/helpers";
 
 export async function getDashboardData(user: SessionUser, brandId?: string) {
@@ -31,7 +34,7 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
   const chartStart = series[0]?.start ?? currentRange.start;
   const chartEnd = series.at(-1)?.end ?? currentRange.end;
 
-  const [transactions, invoices, vendorBills, brands] = await Promise.all([
+  const [transactions, invoices, vendorBills, brands, cashTotals] = await Promise.all([
     prisma.transaction.findMany({
       where: {
         status: "POSTED",
@@ -43,6 +46,7 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
       },
       include: {
         brand: true,
+        account: true,
         category: true,
       },
       orderBy: { transactionDate: "asc" },
@@ -69,16 +73,29 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
       where: brandWhere ? { id: brandWhere } : undefined,
       orderBy: { name: "asc" },
     }),
+    prisma.transaction.aggregate({
+      where: {
+        status: "POSTED",
+        brandId: brandWhere,
+      },
+      _sum: {
+        amountIn: true,
+        amountOut: true,
+      },
+    }),
   ]);
 
-  const summarize = (items: typeof transactions) =>
-    items.reduce(
-      (acc, tx) => {
-        acc.income += decimalToNumber(tx.amountIn);
-        acc.expense += decimalToNumber(tx.amountOut);
+  const summarizeProfitLoss = (items: typeof transactions) =>
+    finalizeProfitLossBuckets(
+      items.reduce((acc, tx) => {
+        const buckets = summarizeProfitLossTransactions([tx]);
+        acc.revenue += buckets.revenue;
+        acc.cogs += buckets.cogs;
+        acc.expense += buckets.expense;
+        acc.otherIncome += buckets.otherIncome;
+        acc.otherExpense += buckets.otherExpense;
         return acc;
-      },
-      { income: 0, expense: 0 },
+      }, createEmptyProfitLossBuckets()),
     );
 
   const currentTransactions = transactions.filter(
@@ -89,30 +106,22 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
     (tx) => tx.transactionDate >= previousStart && tx.transactionDate <= previousEnd,
   );
 
-  const currentSummary = summarize(currentTransactions);
-  const previousSummary = summarize(previousTransactions);
-  const currentProfit = currentSummary.income - currentSummary.expense;
-  const previousProfit = previousSummary.income - previousSummary.expense;
+  const currentSummary = summarizeProfitLoss(currentTransactions);
+  const previousSummary = summarizeProfitLoss(previousTransactions);
 
   const brandPerformance = brands
     .map((brand) => {
       const brandTransactions = currentTransactions.filter(
         (tx) => tx.brandId === brand.id,
       );
-      const revenue = brandTransactions.reduce(
-        (sum, tx) => sum + decimalToNumber(tx.amountIn),
-        0,
-      );
-      const expense = brandTransactions.reduce(
-        (sum, tx) => sum + decimalToNumber(tx.amountOut),
-        0,
-      );
+      const summary = summarizeProfitLoss(brandTransactions);
 
       return {
         brandId: brand.id,
         brandName: brand.name,
-        revenue,
-        profit: revenue - expense,
+        revenue: summary.revenue,
+        profit: summary.netProfit,
+        expense: summary.totalExpense,
       };
     })
     .sort((a, b) => b.revenue - a.revenue);
@@ -122,21 +131,18 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
       (tx) => tx.transactionDate >= point.start && tx.transactionDate <= point.end,
     );
 
-    const omzet = pointTransactions.reduce(
-      (sum, tx) => sum + decimalToNumber(tx.amountIn),
-      0,
-    );
-    const pengeluaran = pointTransactions.reduce(
-      (sum, tx) => sum + decimalToNumber(tx.amountOut),
+    const profitLoss = summarizeProfitLoss(pointTransactions);
+    const cashFlow = pointTransactions.reduce(
+      (sum, tx) => sum + decimalToNumber(tx.amountIn) - decimalToNumber(tx.amountOut),
       0,
     );
 
     return {
       label: point.label,
-      omzet,
-      pengeluaran,
-      labaBersih: omzet - pengeluaran,
-      cashFlow: omzet - pengeluaran,
+      omzet: profitLoss.revenue,
+      pengeluaran: profitLoss.totalExpense,
+      labaBersih: profitLoss.netProfit,
+      cashFlow,
     };
   });
 
@@ -144,7 +150,12 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
     (acc, tx) => {
       const amountOut = decimalToNumber(tx.amountOut);
 
-      if (amountOut <= 0) {
+      if (
+        amountOut <= 0 ||
+        !["COST_OF_GOODS_SOLD", "EXPENSE", "OTHER_EXPENSE"].includes(
+          tx.account?.category ?? "",
+        )
+      ) {
         return acc;
       }
 
@@ -157,9 +168,9 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
 
   return {
     metrics: {
-      omzetThisMonth: currentSummary.income,
-      expenseThisMonth: currentSummary.expense,
-      netProfitThisMonth: currentProfit,
+      omzetThisMonth: currentSummary.revenue,
+      expenseThisMonth: currentSummary.totalExpense,
+      netProfitThisMonth: currentSummary.netProfit,
       outstandingReceivables: invoices.reduce(
         (sum, row) => sum + decimalToNumber(row.outstandingAmount),
         0,
@@ -169,13 +180,13 @@ export async function getDashboardData(user: SessionUser, brandId?: string) {
         0,
       ),
       currentCashBalance:
-        transactions.reduce((sum, tx) => sum + decimalToNumber(tx.amountIn), 0) -
-        transactions.reduce((sum, tx) => sum + decimalToNumber(tx.amountOut), 0),
+        decimalToNumber(cashTotals._sum.amountIn) -
+        decimalToNumber(cashTotals._sum.amountOut),
       topRevenueBrand: brandPerformance[0] ?? null,
       topProfitBrand:
         [...brandPerformance].sort((a, b) => b.profit - a.profit)[0] ?? null,
-      omzetPrevMonth: previousSummary.income,
-      profitPrevMonth: previousProfit,
+      omzetPrevMonth: previousSummary.revenue,
+      profitPrevMonth: previousSummary.netProfit,
     },
     charts: {
       monthly: monthlySeries,

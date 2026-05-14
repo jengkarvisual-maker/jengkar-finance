@@ -15,7 +15,7 @@ import {
 import { requireUser } from "@/lib/auth/session";
 import { ACCOUNT_CATEGORY_OPTIONS } from "@/lib/constants";
 import { toOptions } from "@/lib/options";
-import { readFilters } from "@/lib/search-params";
+import { createSearchParams, readFilters } from "@/lib/search-params";
 import { getProfitLossReport } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency } from "@/lib/utils";
@@ -45,12 +45,18 @@ export default async function ProfitLossReportPage({
     getMasterDataOptions(user),
     getProfitLossReport(user, filters),
   ]);
+  const exportQuery = createSearchParams(resolvedSearchParams);
+  const exportHref = exportQuery
+    ? `/api/export/profit-loss?${exportQuery}`
+    : "/api/export/profit-loss";
 
   const defaultValues: Record<string, string | undefined> = {
     brandId: getSingleValue(resolvedSearchParams.brandId),
-    category: getSingleValue(resolvedSearchParams.category),
-    page: getSingleValue(resolvedSearchParams.page),
-    pageSize: getSingleValue(resolvedSearchParams.pageSize),
+    accountCategory:
+      getSingleValue(resolvedSearchParams.accountCategory) ??
+      getSingleValue(resolvedSearchParams.category),
+    from: getSingleValue(resolvedSearchParams.from),
+    to: getSingleValue(resolvedSearchParams.to),
   };
 
   return (
@@ -61,7 +67,7 @@ export default async function ProfitLossReportPage({
         description="Analisis revenue, COGS, operating expense, dan net profit per brand maupun konsolidasi."
         action={
           <Button asChild variant="secondary">
-            <Link href="/api/export/profit-loss">Export CSV</Link>
+            <Link href={exportHref}>Export CSV</Link>
           </Button>
         }
       />

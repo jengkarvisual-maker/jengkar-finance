@@ -1,11 +1,11 @@
-import { requireUser } from "@/lib/auth/session";
+import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
 
 export default async function PrintLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await requireUser();
+  await requireFinanceWorkspaceUser();
 
   return children;
 }

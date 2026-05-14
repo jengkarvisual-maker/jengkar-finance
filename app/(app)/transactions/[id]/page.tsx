@@ -34,7 +34,7 @@ export default async function TransactionDetailPage({
             <Button asChild variant="secondary">
               <Link href={`/transactions/${transaction.id}/edit`}>Edit transaksi</Link>
             </Button>
-            <DeleteButton action={deleteTransactionAction} id={transaction.id} />
+            <DeleteButton action={deleteTransactionAction} id={transaction.id} redirectTo="/transactions" />
           </>
         }
       />

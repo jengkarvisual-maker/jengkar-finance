@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { VendorBillForm } from "@/components/forms/vendor-bill-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireUser } from "@/lib/auth/session";
-import { toDateInputValue, toOptions } from "@/lib/options";
+import { toDateInputValue, toMetaOptions, toOptions } from "@/lib/options";
 import { getVendorBillById, listProjects } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 
@@ -46,8 +46,13 @@ export default async function EditPayablePage({
           notes: bill.notes ?? "",
         }}
         brands={toOptions(master.brands, (item) => item.id, (item) => item.name)}
-        vendors={toOptions(master.vendors, (item) => item.id, (item) => item.name)}
-        projects={toOptions(projects, (item) => item.id, (item) => item.name)}
+        vendors={toMetaOptions(master.vendors, (item) => item.id, (item) => item.name, (item) => ({
+          brandIds: item.brandLinks.map((link) => link.brandId),
+        }))}
+        projects={toMetaOptions(projects, (item) => item.id, (item) => item.name, (item) => ({
+          brandId: item.brandId,
+        }))}
+        isLinkedToTransactions={bill.transactions.length > 0}
       />
     </>
   );

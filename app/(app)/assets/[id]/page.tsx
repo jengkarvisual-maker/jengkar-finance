@@ -34,7 +34,7 @@ export default async function AssetDetailPage({
             <Button asChild variant="secondary">
               <Link href={`/assets/${asset.id}/edit`}>Edit aset</Link>
             </Button>
-            <DeleteButton action={deleteAssetAction} id={asset.id} />
+            <DeleteButton action={deleteAssetAction} id={asset.id} redirectTo="/assets" />
           </>
         }
       />

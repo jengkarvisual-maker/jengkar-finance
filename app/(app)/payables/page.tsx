@@ -4,7 +4,7 @@ import { deleteVendorBillAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
 import { toOptions } from "@/lib/options";
-import { readFilters } from "@/lib/search-params";
+import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listVendorBills } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -50,6 +50,10 @@ export default async function PayablesPage({
     getMasterDataOptions(user),
     listVendorBills(user, filters),
   ]);
+  const exportQuery = createSearchParams(rawSearchParams);
+  const exportHref = exportQuery
+    ? `/api/export/payables?${exportQuery}`
+    : "/api/export/payables";
 
   return (
     <>
@@ -60,7 +64,7 @@ export default async function PayablesPage({
         action={
           <>
             <Button asChild variant="secondary">
-              <Link href="/api/export/payables">Export CSV</Link>
+              <Link href={exportHref}>Export CSV</Link>
             </Button>
             <Button asChild>
               <Link href="/payables/new">Tambah tagihan</Link>

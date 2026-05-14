@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { jwtVerify, SignJWT } from "jose";
 
 import { prisma } from "@/lib/prisma";
-import type { SessionUser } from "@/lib/permissions";
+import { canAccessFinanceWorkspace, type SessionUser } from "@/lib/permissions";
 
 const SESSION_COOKIE = "rjf_session";
 const encoder = new TextEncoder();
@@ -103,6 +103,16 @@ export async function requireUser() {
 
   if (!session) {
     redirect("/login");
+  }
+
+  return session;
+}
+
+export async function requireFinanceWorkspaceUser() {
+  const session = await requireUser();
+
+  if (!canAccessFinanceWorkspace(session)) {
+    redirect("/access-denied");
   }
 
   return session;
