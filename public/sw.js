@@ -1,4 +1,4 @@
-const CACHE_NAME = "rj-finance-v1";
+const CACHE_NAME = "rj-finance-v2";
 const APP_SHELL = [
   "/",
   "/login",
@@ -9,6 +9,45 @@ const APP_SHELL = [
   "/icons/icon-512.png",
   "/icons/apple-touch-icon.png",
 ];
+
+const STATIC_ASSET_EXTENSIONS = [
+  ".css",
+  ".js",
+  ".mjs",
+  ".png",
+  ".svg",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".ico",
+  ".json",
+];
+
+function isStaticAssetRequest(url) {
+  return (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    APP_SHELL.includes(url.pathname) ||
+    STATIC_ASSET_EXTENSIONS.some((extension) => url.pathname.endsWith(extension))
+  );
+}
+
+function isDynamicAppRequest(request, url) {
+  return (
+    request.mode === "navigate" ||
+    url.pathname.startsWith("/api/") ||
+    request.headers.has("rsc") ||
+    request.headers.has("next-router-state-tree") ||
+    request.headers.has("next-router-prefetch") ||
+    request.headers.has("next-router-segment-prefetch") ||
+    request.headers.has("x-nextjs-data") ||
+    url.searchParams.has("_rsc")
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -40,8 +79,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/offline.html")));
+  if (isDynamicAppRequest(request, requestUrl)) {
+    event.respondWith(
+      fetch(request).catch(() =>
+        request.mode === "navigate" ? caches.match("/offline.html") : Promise.reject(),
+      ),
+    );
+    return;
+  }
+
+  if (!isStaticAssetRequest(requestUrl)) {
+    event.respondWith(fetch(request));
     return;
   }
 

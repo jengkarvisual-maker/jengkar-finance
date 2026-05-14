@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,8 @@ export function DeleteButton({
   label = "Hapus",
   redirectTo,
 }: DeleteButtonProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -35,7 +38,14 @@ export function DeleteButton({
           startTransition(async () => {
             const result = await action(id);
             if (result.ok) {
-              window.location.assign(redirectTo ?? window.location.href);
+              setMessage(null);
+
+              if (redirectTo && redirectTo !== pathname) {
+                router.push(redirectTo);
+                return;
+              }
+
+              router.refresh();
               return;
             }
 

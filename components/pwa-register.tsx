@@ -12,9 +12,16 @@ export function PwaRegister() {
       return;
     }
 
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Keep app usable even if registration fails.
-    });
+    void navigator.serviceWorker
+      .register("/sw.js")
+      .then(async (registration) => {
+        await registration.update().catch(() => {
+          // Keep app usable even if update checks fail.
+        });
+      })
+      .catch(() => {
+        // Keep app usable even if registration fails.
+      });
   }, []);
 
   return null;
