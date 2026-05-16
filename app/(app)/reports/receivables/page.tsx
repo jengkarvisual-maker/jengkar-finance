@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { toOptions } from "@/lib/options";
 import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listInvoices } from "@/lib/services/finance";
@@ -101,21 +102,35 @@ export default async function ReceivableReportPage({
         </TableHeader>
 
         <TableBody>
-          {report.rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell className="font-medium">{row.invoiceNo}</TableCell>
-              <TableCell>{row.brand.name}</TableCell>
-              <TableCell>{row.client.name}</TableCell>
-              <TableCell>{formatCurrency(Number(row.totalAmount))}</TableCell>
-              <TableCell>
-                {formatCurrency(Number(row.outstandingAmount))}
-              </TableCell>
-              <TableCell>{formatDate(row.dueDate)}</TableCell>
-              <TableCell>
-                <StatusBadge status={row.status} />
-              </TableCell>
-            </TableRow>
-          ))}
+          {report.rows.map((row) => {
+            const displayAmounts = getInvoiceDisplayAmounts(row);
+            const hasAdditionalItems = displayAmounts.additionalTotal > 0;
+
+            return (
+              <TableRow key={row.id}>
+                <TableCell className="font-medium">{row.invoiceNo}</TableCell>
+                <TableCell>{row.brand.name}</TableCell>
+                <TableCell>{row.client.name}</TableCell>
+                <TableCell>
+                  <div>
+                    <p>{formatCurrency(displayAmounts.grandTotal)}</p>
+                    {hasAdditionalItems ? (
+                      <p className="text-xs text-muted-foreground">
+                        Tambahan {formatCurrency(displayAmounts.additionalTotal)}
+                      </p>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {formatCurrency(displayAmounts.outstandingDisplay)}
+                </TableCell>
+                <TableCell>{formatDate(row.dueDate)}</TableCell>
+                <TableCell>
+                  <StatusBadge status={row.status} />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </>

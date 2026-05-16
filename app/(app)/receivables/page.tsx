@@ -3,6 +3,7 @@ import Link from "next/link";
 import { deleteInvoiceAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
 import { INVOICE_STATUS_OPTIONS } from "@/lib/constants";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { createSearchParams, readFilters } from "@/lib/search-params";
 import { listInvoices } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
@@ -139,39 +140,62 @@ export default async function ReceivablesPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {receivables.rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>
-                <div>
-                  <p className="font-medium">{row.invoiceNo}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(row.invoiceDate)}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>{row.brand.name}</TableCell>
-              <TableCell>{row.client.name}</TableCell>
-              <TableCell>{row.project?.name ?? "-"}</TableCell>
-              <TableCell>{formatCurrency(Number(row.totalAmount))}</TableCell>
-              <TableCell>{formatCurrency(Number(row.downPayment))}</TableCell>
-              <TableCell>{formatCurrency(Number(row.outstandingAmount))}</TableCell>
-              <TableCell>{formatDate(row.dueDate)}</TableCell>
-              <TableCell>
-                <StatusBadge status={row.status} />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="secondary">
-                    <Link href={`/receivables/${row.id}`}>Detail</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="outline">
-                    <Link href={`/receivables/${row.id}/edit`}>Edit</Link>
-                  </Button>
-                  <DeleteButton action={deleteInvoiceAction} id={row.id} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {receivables.rows.map((row) => {
+            const displayAmounts = getInvoiceDisplayAmounts(row);
+            const hasAdditionalItems = displayAmounts.additionalTotal > 0;
+
+            return (
+              <TableRow key={row.id}>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{row.invoiceNo}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(row.invoiceDate)}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>{row.brand.name}</TableCell>
+                <TableCell>{row.client.name}</TableCell>
+                <TableCell>{row.project?.name ?? "-"}</TableCell>
+                <TableCell>
+                  <div>
+                    <p>{formatCurrency(displayAmounts.grandTotal)}</p>
+                    {hasAdditionalItems ? (
+                      <p className="text-xs text-muted-foreground">
+                        Tambahan {formatCurrency(displayAmounts.additionalTotal)}
+                      </p>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell>{formatCurrency(Number(row.downPayment))}</TableCell>
+                <TableCell>
+                  <div>
+                    <p>{formatCurrency(displayAmounts.outstandingDisplay)}</p>
+                    {hasAdditionalItems ? (
+                      <p className="text-xs text-muted-foreground">
+                        Awal {formatCurrency(Number(row.outstandingAmount))}
+                      </p>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell>{formatDate(row.dueDate)}</TableCell>
+                <TableCell>
+                  <StatusBadge status={row.status} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" variant="secondary">
+                      <Link href={`/receivables/${row.id}`}>Detail</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/receivables/${row.id}/edit`}>Edit</Link>
+                    </Button>
+                    <DeleteButton action={deleteInvoiceAction} id={row.id} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </>

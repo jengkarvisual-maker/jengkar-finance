@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@prisma/client";
 
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import type { SessionUser } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
@@ -359,6 +360,11 @@ export async function listInvoices(user: SessionUser, filters: ListInput) {
       brand: true,
       client: true,
       project: true,
+      additionalItems: {
+        select: {
+          totalAmount: true,
+        },
+      },
     },
     orderBy: [
       { dueDate: "asc" },
@@ -383,10 +389,12 @@ export async function listInvoices(user: SessionUser, filters: ListInput) {
     pageSize,
     totals: rows.reduce(
       (acc, row) => {
-        acc.totalAmount += decimalToNumber(row.totalAmount);
-        acc.amountPaid += decimalToNumber(row.amountPaid);
+        const displayAmounts = getInvoiceDisplayAmounts(row);
+
+        acc.totalAmount += displayAmounts.grandTotal;
+        acc.amountPaid += displayAmounts.amountPaid;
         acc.downPayment += decimalToNumber(row.downPayment);
-        acc.outstandingAmount += decimalToNumber(row.outstandingAmount);
+        acc.outstandingAmount += displayAmounts.outstandingDisplay;
         return acc;
       },
       {
