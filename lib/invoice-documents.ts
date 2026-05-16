@@ -51,16 +51,25 @@ export async function getBrandLogoDataUri(brand?: BrandIdentity | null) {
     return null;
   }
 
-  const filePath = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
+  const normalizedPublicPath = publicPath.replace(/^\//, "");
+  const candidatePaths = [
+    path.join(/* turbopackIgnore: true */ process.cwd(), "public", normalizedPublicPath),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "public", normalizedPublicPath),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "..", "public", normalizedPublicPath),
+  ];
 
-  try {
-    const fileBuffer = await readFile(filePath);
-    const extension = path.extname(filePath).slice(1).toLowerCase() || "png";
-    const mimeType = extension === "svg" ? "image/svg+xml" : `image/${extension}`;
-    return `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
-  } catch {
-    return null;
+  for (const filePath of candidatePaths) {
+    try {
+      const fileBuffer = await readFile(filePath);
+      const extension = path.extname(filePath).slice(1).toLowerCase() || "png";
+      const mimeType = extension === "svg" ? "image/svg+xml" : `image/${extension}`;
+      return `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
+    } catch {
+      continue;
+    }
   }
+
+  return null;
 }
 
 export function sanitizeFilenamePart(value: string | null | undefined, fallback: string) {

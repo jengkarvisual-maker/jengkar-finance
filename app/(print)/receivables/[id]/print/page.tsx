@@ -26,7 +26,9 @@ export async function generateMetadata({
   }
 
   return {
-    title: buildInvoicePdfFilename(invoice).replace(/\.pdf$/i, ""),
+    title: {
+      absolute: buildInvoicePdfFilename(invoice).replace(/\.pdf$/i, ""),
+    },
   };
 }
 
