@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { InvoiceForm } from "@/components/forms/invoice-form";
+import { InvoiceAdditionalItemsPanel } from "@/components/receivables/invoice-additional-items-panel";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireUser } from "@/lib/auth/session";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { toDateInputValue, toMetaOptions, toOptions } from "@/lib/options";
 import { getInvoiceById, listProjects } from "@/lib/services/finance";
 import { getMasterDataOptions } from "@/lib/services/master-data";
@@ -23,6 +25,8 @@ export default async function EditReceivablePage({
   if (!invoice) {
     notFound();
   }
+
+  const displayAmounts = getInvoiceDisplayAmounts(invoice);
 
   return (
     <>
@@ -52,6 +56,25 @@ export default async function EditReceivablePage({
           brandId: item.brandId,
         }))}
         isLinkedToTransactions={invoice.transactions.length > 0}
+      />
+      <InvoiceAdditionalItemsPanel
+        invoiceId={invoice.id}
+        baseTotal={displayAmounts.baseTotal}
+        additionalTotal={displayAmounts.additionalTotal}
+        grandTotal={displayAmounts.grandTotal}
+        downPayment={Number(invoice.downPayment)}
+        amountPaid={displayAmounts.amountPaid}
+        outstandingDisplay={displayAmounts.outstandingDisplay}
+        items={invoice.additionalItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          totalAmount: Number(item.totalAmount),
+          notes: item.notes,
+          createdAt: item.createdAt.toISOString(),
+        }))}
       />
     </>
   );
