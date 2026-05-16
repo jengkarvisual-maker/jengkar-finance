@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PrintToolbar } from "@/components/shared/print-toolbar";
 import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
+import { getBrandLogoPath } from "@/lib/invoice-documents";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ export default async function ReceivablePrintPage({
   const user = await requireFinanceWorkspaceUser();
   const { id } = await params;
   const invoice = await getInvoiceById(user, id);
+  const brandLogoPath = getBrandLogoPath(invoice?.brand);
 
   if (!invoice) {
     notFound();
@@ -20,7 +22,10 @@ export default async function ReceivablePrintPage({
 
   return (
     <main className="min-h-screen bg-stone-100 print:bg-white">
-      <PrintToolbar backHref={`/receivables/${invoice.id}`} />
+      <PrintToolbar
+        backHref={`/receivables/${invoice.id}`}
+        downloadHref={`/api/invoices/${invoice.id}/pdf`}
+      />
 
       <div className="mx-auto max-w-5xl px-4 py-6 print:px-0 print:py-0">
         <section className="overflow-hidden rounded-[28px] border border-border/70 bg-white shadow-sm print:rounded-none print:border-0 print:shadow-none">
@@ -36,7 +41,20 @@ export default async function ReceivablePrintPage({
                 </div>
               </div>
 
-              <div className="space-y-1 text-sm text-muted-foreground sm:text-right">
+              <div className="space-y-3 text-sm text-muted-foreground sm:text-right">
+                <div className="flex justify-start sm:justify-end">
+                  {brandLogoPath ? (
+                    <img
+                      src={brandLogoPath}
+                      alt={invoice.brand.name}
+                      className="max-h-14 w-auto max-w-[180px] object-contain"
+                    />
+                  ) : (
+                    <div className="rounded-full border border-border/70 px-3 py-1 text-xs font-medium text-foreground">
+                      {invoice.brand.name}
+                    </div>
+                  )}
+                </div>
                 <p>Tanggal invoice: {formatDate(invoice.invoiceDate)}</p>
                 <p>Jatuh tempo: {formatDate(invoice.dueDate)}</p>
                 <p>Status: {invoice.status}</p>

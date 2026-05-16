@@ -31,6 +31,9 @@ export default async function ReceivableDetailPage({
         description={`${invoice.client.name} - ${invoice.project?.name ?? invoice.brand.name}`}
         action={
   <>
+    <Button asChild>
+      <a href={`/api/invoices/${invoice.id}/pdf`}>Download PDF</a>
+    </Button>
 
     <Button asChild variant="secondary">
       <Link href={`/receivables/${invoice.id}/edit`}>
@@ -40,7 +43,7 @@ export default async function ReceivableDetailPage({
 
     <Button asChild variant="secondary">
       <Link href={`/receivables/${invoice.id}/print`} target="_blank" rel="noreferrer">
-        Print / Save PDF
+        Print preview
       </Link>
     </Button>
 

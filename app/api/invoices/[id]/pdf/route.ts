@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 
 import { getCurrentSession } from "@/lib/auth/session";
+import {
+  buildInvoicePdfFilename,
+  escapeHtml,
+  getBrandLogoDataUri,
+} from "@/lib/invoice-documents";
 import { canAccessFinanceWorkspace } from "@/lib/permissions";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -32,15 +37,22 @@ export async function GET(
       return new NextResponse("Invoice tidak ditemukan.", { status: 404 });
     }
 
+    const filename = buildInvoicePdfFilename(invoice);
+    const brandLogoDataUri = await getBrandLogoDataUri(invoice.brand);
+    const brandFallbackLabel = escapeHtml(invoice.brand.name);
+    const logoMarkup = brandLogoDataUri
+      ? `<img src="${brandLogoDataUri}" alt="${brandFallbackLabel}" style="max-width: 180px; max-height: 68px; object-fit: contain;" />`
+      : `<div style="font-size: 14px; color: #666;">${brandFallbackLabel}</div>`;
+
     const paymentRows =
       invoice.transactions.length > 0
         ? invoice.transactions
             .map(
               (tx) => `
                 <tr>
-                  <td>${formatDate(tx.transactionDate)}</td>
-                  <td>${tx.transactionNo}</td>
-                  <td>${tx.description}</td>
+                  <td>${escapeHtml(formatDate(tx.transactionDate))}</td>
+                  <td>${escapeHtml(tx.transactionNo)}</td>
+                  <td>${escapeHtml(tx.description)}</td>
                   <td>${formatCurrency(Number(tx.amountIn))}</td>
                 </tr>
               `
@@ -57,7 +69,7 @@ export async function GET(
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>${invoice.invoiceNo}</title>
+          <title>${escapeHtml(invoice.invoiceNo)}</title>
           <style>
             * {
               box-sizing: border-box;
@@ -80,6 +92,7 @@ export async function GET(
               display: flex;
               justify-content: space-between;
               align-items: flex-start;
+              gap: 24px;
               margin-bottom: 32px;
             }
 
@@ -154,6 +167,12 @@ export async function GET(
               border: 1px solid #ccc;
               font-size: 12px;
             }
+
+            .logo-wrap {
+              min-width: 180px;
+              display: flex;
+              justify-content: flex-end;
+            }
           </style>
         </head>
         <body>
@@ -161,15 +180,16 @@ export async function GET(
             <div class="header">
               <div>
                 <h1 class="title">INVOICE</h1>
-                <div class="muted">${invoice.brand.name}</div>
+                <div class="muted">${brandFallbackLabel}</div>
               </div>
 
-              <div>
-                <div><strong>No:</strong> ${invoice.invoiceNo}</div>
-                <div><strong>Tanggal:</strong> ${formatDate(invoice.invoiceDate)}</div>
-                <div><strong>Jatuh tempo:</strong> ${formatDate(invoice.dueDate)}</div>
+              <div style="text-align:right;">
+                <div class="logo-wrap" style="margin-bottom: 14px;">${logoMarkup}</div>
+                <div><strong>No:</strong> ${escapeHtml(invoice.invoiceNo)}</div>
+                <div><strong>Tanggal:</strong> ${escapeHtml(formatDate(invoice.invoiceDate))}</div>
+                <div><strong>Jatuh tempo:</strong> ${escapeHtml(formatDate(invoice.dueDate))}</div>
                 <div style="margin-top:8px;">
-                  <span class="badge">${invoice.status}</span>
+                  <span class="badge">${escapeHtml(invoice.status)}</span>
                 </div>
               </div>
             </div>
@@ -177,18 +197,19 @@ export async function GET(
             <div class="grid section">
               <div class="card">
                 <div class="muted">Ditagihkan kepada</div>
-                <div><strong>${invoice.client.name}</strong></div>
-                ${invoice.client.companyName ? `<div>${invoice.client.companyName}</div>` : ""}
-                ${invoice.client.phone ? `<div>${invoice.client.phone}</div>` : ""}
-                ${invoice.client.email ? `<div>${invoice.client.email}</div>` : ""}
+                <div><strong>${escapeHtml(invoice.client.name)}</strong></div>
+                ${invoice.client.companyName ? `<div>${escapeHtml(invoice.client.companyName)}</div>` : ""}
+                ${invoice.client.phone ? `<div>${escapeHtml(invoice.client.phone)}</div>` : ""}
+                ${invoice.client.email ? `<div>${escapeHtml(invoice.client.email)}</div>` : ""}
+                ${invoice.client.address ? `<div>${escapeHtml(invoice.client.address)}</div>` : ""}
               </div>
 
               <div class="card">
                 <div class="muted">Project</div>
-                <div><strong>${invoice.project?.name ?? "-"}</strong></div>
+                <div><strong>${escapeHtml(invoice.project?.name ?? "-")}</strong></div>
                 ${
                   invoice.notes
-                    ? `<div class="muted" style="margin-top:12px;">Catatan</div><div>${invoice.notes}</div>`
+                    ? `<div class="muted" style="margin-top:12px;">Catatan</div><div>${escapeHtml(invoice.notes)}</div>`
                     : ""
                 }
               </div>
@@ -208,8 +229,8 @@ export async function GET(
                 </thead>
                 <tbody>
                   <tr>
-                    <td>${invoice.project?.name ?? "Invoice"}</td>
-                    <td>${invoice.status}</td>
+                    <td>${escapeHtml(invoice.project?.name ?? `Invoice ${invoice.invoiceNo}`)}</td>
+                    <td>${escapeHtml(invoice.status)}</td>
                     <td>${formatCurrency(Number(invoice.downPayment))}</td>
                     <td>${formatCurrency(Number(invoice.amountPaid))}</td>
                     <td>${formatCurrency(Number(invoice.outstandingAmount))}</td>
@@ -277,7 +298,7 @@ export async function GET(
       return new NextResponse(pdf, {
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `inline; filename="${invoice.invoiceNo}.pdf"`,
+          "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
         },
       });
     } finally {
