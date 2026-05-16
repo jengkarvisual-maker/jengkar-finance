@@ -30,7 +30,7 @@ export function PrintToolbar({ backHref, downloadHref }: PrintToolbarProps) {
             </Button>
           ) : null}
           <Button type="button" onClick={() => window.print()}>
-            Print / Save PDF
+            Print Browser
           </Button>
         </div>
       </div>

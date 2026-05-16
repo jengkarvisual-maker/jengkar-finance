@@ -1,10 +1,34 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PrintToolbar } from "@/components/shared/print-toolbar";
-import { requireFinanceWorkspaceUser } from "@/lib/auth/session";
-import { getBrandLogoPath } from "@/lib/invoice-documents";
+import { getCurrentSession, requireFinanceWorkspaceUser } from "@/lib/auth/session";
+import { buildInvoicePdfFilename, getBrandLogoDataUri } from "@/lib/invoice-documents";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const user = await getCurrentSession();
+
+  if (!user) {
+    return { title: "Invoice print" };
+  }
+
+  const { id } = await params;
+  const invoice = await getInvoiceById(user, id);
+
+  if (!invoice) {
+    return { title: "Invoice print" };
+  }
+
+  return {
+    title: buildInvoicePdfFilename(invoice).replace(/\.pdf$/i, ""),
+  };
+}
 
 export default async function ReceivablePrintPage({
   params,
@@ -14,11 +38,12 @@ export default async function ReceivablePrintPage({
   const user = await requireFinanceWorkspaceUser();
   const { id } = await params;
   const invoice = await getInvoiceById(user, id);
-  const brandLogoPath = getBrandLogoPath(invoice?.brand);
 
   if (!invoice) {
     notFound();
   }
+
+  const brandLogoDataUri = await getBrandLogoDataUri(invoice.brand);
 
   return (
     <main className="min-h-screen bg-stone-100 print:bg-white">
@@ -43,9 +68,9 @@ export default async function ReceivablePrintPage({
 
               <div className="space-y-3 text-sm text-muted-foreground sm:text-right">
                 <div className="flex justify-start sm:justify-end">
-                  {brandLogoPath ? (
+                  {brandLogoDataUri ? (
                     <img
-                      src={brandLogoPath}
+                      src={brandLogoDataUri}
                       alt={invoice.brand.name}
                       className="max-h-14 w-auto max-w-[180px] object-contain"
                     />
