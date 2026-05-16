@@ -164,6 +164,15 @@ export const invoiceSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
+export const invoiceAdditionalItemSchema = z.object({
+  invoiceId: z.string().min(1, "Invoice wajib valid."),
+  name: z.string().min(2, "Nama item wajib diisi.").max(150),
+  description: z.string().max(500).optional().nullable(),
+  quantity: z.coerce.number().min(1, "Quantity minimal 1."),
+  unitPrice: z.coerce.number().min(0, "Harga satuan tidak boleh negatif."),
+  notes: z.string().max(500).optional().nullable(),
+});
+
 export const vendorBillSchema = z.object({
   billNo: z.string().max(50).optional().nullable(),
   billDate: z.string().min(1),
@@ -231,6 +240,7 @@ export type TransactionCategorySchema = z.infer<typeof transactionCategorySchema
 export type UserSchema = z.infer<typeof userSchema>;
 export type TransactionSchema = z.infer<typeof transactionSchema>;
 export type InvoiceSchema = z.infer<typeof invoiceSchema>;
+export type InvoiceAdditionalItemSchema = z.infer<typeof invoiceAdditionalItemSchema>;
 export type VendorBillSchema = z.infer<typeof vendorBillSchema>;
 export type AssetSchema = z.infer<typeof assetSchema>;
 export type ProjectSchema = z.infer<typeof projectSchema>;

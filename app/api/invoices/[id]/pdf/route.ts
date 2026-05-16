@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { chromium } from "playwright";
 
 import { getCurrentSession } from "@/lib/auth/session";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import {
   buildInvoicePdfFilename,
   escapeHtml,
@@ -38,11 +39,46 @@ export async function GET(
     }
 
     const filename = buildInvoicePdfFilename(invoice);
+    const displayAmounts = getInvoiceDisplayAmounts(invoice);
     const brandLogoDataUri = await getBrandLogoDataUri(invoice.brand);
     const brandFallbackLabel = escapeHtml(invoice.brand.name);
     const logoMarkup = brandLogoDataUri
       ? `<img src="${brandLogoDataUri}" alt="${brandFallbackLabel}" style="max-width: 180px; max-height: 68px; object-fit: contain;" />`
       : `<div style="font-size: 14px; color: #666;">${brandFallbackLabel}</div>`;
+    const additionalItemsSection =
+      invoice.additionalItems.length > 0
+        ? `
+            <div class="section">
+              <div class="muted" style="margin-bottom: 8px;">Penambahan item & biaya</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nama item</th>
+                    <th>Deskripsi</th>
+                    <th>Qty</th>
+                    <th>Harga satuan</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${invoice.additionalItems
+                    .map(
+                      (item) => `
+                        <tr>
+                          <td>${escapeHtml(item.name)}</td>
+                          <td>${escapeHtml(item.description || item.notes || "-")}</td>
+                          <td>${Number(item.quantity)}</td>
+                          <td>${formatCurrency(Number(item.unitPrice))}</td>
+                          <td>${formatCurrency(Number(item.totalAmount))}</td>
+                        </tr>
+                      `,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          `
+        : "";
 
     const paymentRows =
       invoice.transactions.length > 0
@@ -233,12 +269,14 @@ export async function GET(
                     <td>${escapeHtml(invoice.status)}</td>
                     <td>${formatCurrency(Number(invoice.downPayment))}</td>
                     <td>${formatCurrency(Number(invoice.amountPaid))}</td>
-                    <td>${formatCurrency(Number(invoice.outstandingAmount))}</td>
-                    <td>${formatCurrency(Number(invoice.totalAmount))}</td>
+                    <td>${formatCurrency(displayAmounts.outstandingDisplay)}</td>
+                    <td>${formatCurrency(displayAmounts.baseTotal)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+
+            ${additionalItemsSection}
 
             <div class="section">
               <div class="muted">Riwayat pembayaran</div>
@@ -259,16 +297,28 @@ export async function GET(
 
             <div class="totals">
               <div class="totals-row">
-                <span>Total invoice</span>
-                <span>${formatCurrency(Number(invoice.totalAmount))}</span>
+                <span>Total invoice awal</span>
+                <span>${formatCurrency(displayAmounts.baseTotal)}</span>
+              </div>
+              <div class="totals-row">
+                <span>Total tambahan</span>
+                <span>${formatCurrency(displayAmounts.additionalTotal)}</span>
+              </div>
+              <div class="totals-row">
+                <span>Grand total</span>
+                <span>${formatCurrency(displayAmounts.grandTotal)}</span>
+              </div>
+              <div class="totals-row">
+                <span>DP diterima</span>
+                <span>${formatCurrency(Number(invoice.downPayment))}</span>
               </div>
               <div class="totals-row">
                 <span>Sudah dibayar</span>
-                <span>${formatCurrency(Number(invoice.amountPaid))}</span>
+                <span>${formatCurrency(displayAmounts.amountPaid)}</span>
               </div>
               <div class="totals-row bold">
-                <span>Sisa tagihan</span>
-                <span>${formatCurrency(Number(invoice.outstandingAmount))}</span>
+                <span>Sisa pembayaran</span>
+                <span>${formatCurrency(displayAmounts.outstandingDisplay)}</span>
               </div>
             </div>
           </div>

@@ -17,8 +17,10 @@ import { resolveInvoiceStatus, resolveVendorBillStatus } from "@/lib/services/he
 import {
   assetSchema,
   invoiceSchema,
+  invoiceAdditionalItemSchema,
   projectSchema,
   transactionSchema,
+  type InvoiceAdditionalItemSchema,
   vendorBillSchema,
   type AssetSchema,
   type InvoiceSchema,
@@ -87,6 +89,11 @@ function revalidateFinancePages() {
     "/reports/payables",
     "/reports/assets",
   ].forEach((path) => revalidatePath(path));
+}
+
+function revalidateInvoiceDetailPages(invoiceId: string) {
+  revalidatePath(`/receivables/${invoiceId}`);
+  revalidatePath(`/receivables/${invoiceId}/print`);
 }
 
 export async function upsertTransactionAction(
@@ -654,6 +661,126 @@ export async function upsertInvoiceAction(
   revalidatePath(`/receivables/${invoice.id}`);
 
   return { ok: true, message: "Invoice berhasil disimpan.", data: { id: invoice.id } };
+}
+
+export async function createInvoiceAdditionalItemAction(
+  input: InvoiceAdditionalItemSchema,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireFinanceWorkspaceUser();
+  assertFinanceAccess(user.role.key);
+
+  const parsed = invoiceAdditionalItemSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Data item tambahan belum valid.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: parsed.data.invoiceId },
+    select: {
+      id: true,
+      brandId: true,
+      invoiceNo: true,
+    },
+  });
+
+  if (!invoice) {
+    return { ok: false, message: "Invoice tidak ditemukan." };
+  }
+
+  ensureBrandManageAccess(user, invoice.brandId);
+
+  const quantity = Number(parsed.data.quantity.toFixed(2));
+  const unitPrice = Number(parsed.data.unitPrice.toFixed(2));
+  const totalAmount = Number((quantity * unitPrice).toFixed(2));
+
+  const item = await prisma.invoiceAdditionalItem.create({
+    data: {
+      invoiceId: invoice.id,
+      name: parsed.data.name.trim(),
+      description: normalizeOptional(parsed.data.description),
+      quantity,
+      unitPrice,
+      totalAmount,
+      notes: normalizeOptional(parsed.data.notes),
+    },
+  });
+
+  await logActivity({
+    action: "CREATE",
+    entityType: "InvoiceAdditionalItem",
+    entityId: item.id,
+    description: `${user.name} menambahkan item tambahan pada invoice ${invoice.invoiceNo}.`,
+    userId: user.id,
+    brandId: invoice.brandId,
+    metadata: {
+      invoiceId: invoice.id,
+      name: item.name,
+      quantity,
+      unitPrice,
+      totalAmount,
+    },
+  });
+
+  revalidateInvoiceDetailPages(invoice.id);
+
+  return {
+    ok: true,
+    message: "Item tambahan berhasil disimpan.",
+    data: { id: item.id },
+  };
+}
+
+export async function deleteInvoiceAdditionalItemAction(
+  id: string,
+): Promise<ActionResult> {
+  const user = await requireFinanceWorkspaceUser();
+  assertFinanceAccess(user.role.key);
+
+  const item = await prisma.invoiceAdditionalItem.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      invoice: {
+        select: {
+          id: true,
+          invoiceNo: true,
+          brandId: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    return { ok: false, message: "Item tambahan tidak ditemukan." };
+  }
+
+  ensureBrandManageAccess(user, item.invoice.brandId);
+
+  await prisma.invoiceAdditionalItem.delete({
+    where: { id: item.id },
+  });
+
+  await logActivity({
+    action: "DELETE",
+    entityType: "InvoiceAdditionalItem",
+    entityId: item.id,
+    description: `${user.name} menghapus item tambahan ${item.name} dari invoice ${item.invoice.invoiceNo}.`,
+    userId: user.id,
+    brandId: item.invoice.brandId,
+    metadata: {
+      invoiceId: item.invoice.id,
+      name: item.name,
+    },
+  });
+
+  revalidateInvoiceDetailPages(item.invoice.id);
+
+  return { ok: true, message: "Item tambahan berhasil dihapus." };
 }
 
 export async function upsertVendorBillAction(

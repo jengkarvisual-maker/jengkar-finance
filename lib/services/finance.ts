@@ -406,6 +406,9 @@ export async function getInvoiceById(user: SessionUser, id: string) {
       brand: true,
       client: true,
       project: true,
+      additionalItems: {
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      },
       transactions: {
         include: {
           paymentMethod: true,

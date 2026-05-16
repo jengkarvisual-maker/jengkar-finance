@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { InvoiceAdditionalItemsPanel } from "@/components/receivables/invoice-additional-items-panel";
 import { DeleteButton } from "@/components/shared/delete-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { deleteInvoiceAction } from "@/lib/actions/finance";
 import { requireUser } from "@/lib/auth/session";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -22,6 +24,8 @@ export default async function ReceivableDetailPage({
   if (!invoice) {
     notFound();
   }
+
+  const displayAmounts = getInvoiceDisplayAmounts(invoice);
 
   return (
     <>
@@ -62,10 +66,12 @@ export default async function ReceivableDetailPage({
             <p>Brand: {invoice.brand.name}</p>
             <p>Tanggal invoice: {formatDate(invoice.invoiceDate)}</p>
             <p>Jatuh tempo: {formatDate(invoice.dueDate)}</p>
-            <p>Total invoice: {formatCurrency(Number(invoice.totalAmount))}</p>
+            <p>Total invoice awal: {formatCurrency(displayAmounts.baseTotal)}</p>
+            <p>Total tambahan: {formatCurrency(displayAmounts.additionalTotal)}</p>
+            <p>Grand total: {formatCurrency(displayAmounts.grandTotal)}</p>
             <p>DP diterima: {formatCurrency(Number(invoice.downPayment))}</p>
-            <p>Sudah dibayar: {formatCurrency(Number(invoice.amountPaid))}</p>
-            <p>Sisa tagihan: {formatCurrency(Number(invoice.outstandingAmount))}</p>
+            <p>Sudah dibayar: {formatCurrency(displayAmounts.amountPaid)}</p>
+            <p>Sisa pembayaran tampilan: {formatCurrency(displayAmounts.outstandingDisplay)}</p>
             <p>Status: {invoice.status}</p>
           </CardContent>
         </Card>
@@ -90,6 +96,26 @@ export default async function ReceivableDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      <InvoiceAdditionalItemsPanel
+        invoiceId={invoice.id}
+        baseTotal={displayAmounts.baseTotal}
+        additionalTotal={displayAmounts.additionalTotal}
+        grandTotal={displayAmounts.grandTotal}
+        downPayment={Number(invoice.downPayment)}
+        amountPaid={displayAmounts.amountPaid}
+        outstandingDisplay={displayAmounts.outstandingDisplay}
+        items={invoice.additionalItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          totalAmount: Number(item.totalAmount),
+          notes: item.notes,
+          createdAt: item.createdAt.toISOString(),
+        }))}
+      />
     </>
   );
 }

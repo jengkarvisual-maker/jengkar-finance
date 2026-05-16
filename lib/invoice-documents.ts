@@ -52,10 +52,11 @@ export async function getBrandLogoDataUri(brand?: BrandIdentity | null) {
   }
 
   const normalizedPublicPath = publicPath.replace(/^\//, "");
+  const logoFileName = path.basename(normalizedPublicPath);
   const candidatePaths = [
-    path.join(/* turbopackIgnore: true */ process.cwd(), "public", normalizedPublicPath),
-    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "public", normalizedPublicPath),
-    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "..", "public", normalizedPublicPath),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "public", "brands", logoFileName),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "public", "brands", logoFileName),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "..", "..", "public", "brands", logoFileName),
   ];
 
   for (const filePath of candidatePaths) {

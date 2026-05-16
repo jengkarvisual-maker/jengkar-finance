@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PrintToolbar } from "@/components/shared/print-toolbar";
 import { getCurrentSession, requireFinanceWorkspaceUser } from "@/lib/auth/session";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { buildInvoicePdfFilename, getBrandLogoDataUri } from "@/lib/invoice-documents";
 import { getInvoiceById } from "@/lib/services/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -46,6 +47,7 @@ export default async function ReceivablePrintPage({
   }
 
   const brandLogoDataUri = await getBrandLogoDataUri(invoice.brand);
+  const displayAmounts = getInvoiceDisplayAmounts(invoice);
 
   return (
     <main className="min-h-screen bg-stone-100 print:bg-white">
@@ -133,9 +135,7 @@ export default async function ReceivablePrintPage({
                 </thead>
                 <tbody>
                   <tr className="border-t border-border/70">
-                    <td className="px-4 py-3">
-                      {invoice.project?.name ?? `Invoice ${invoice.invoiceNo}`}
-                    </td>
+                    <td className="px-4 py-3">{invoice.project?.name ?? `Invoice ${invoice.invoiceNo}`}</td>
                     <td className="px-4 py-3">{invoice.status}</td>
                     <td className="px-4 py-3 text-right">
                       {formatCurrency(Number(invoice.downPayment))}
@@ -144,16 +144,63 @@ export default async function ReceivablePrintPage({
                       {formatCurrency(Number(invoice.amountPaid))}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {formatCurrency(Number(invoice.outstandingAmount))}
+                      {formatCurrency(displayAmounts.outstandingDisplay)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {formatCurrency(Number(invoice.totalAmount))}
+                      {formatCurrency(displayAmounts.baseTotal)}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
+
+          {invoice.additionalItems.length > 0 ? (
+            <div className="px-6 pb-6 print:px-8">
+              <div className="rounded-3xl border border-border/70">
+                <div className="border-b border-border/70 px-4 py-3">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Penambahan item & biaya
+                  </h2>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-stone-100 text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Nama item</th>
+                        <th className="px-4 py-3 font-medium">Deskripsi</th>
+                        <th className="px-4 py-3 font-medium text-right">Qty</th>
+                        <th className="px-4 py-3 font-medium text-right">Harga satuan</th>
+                        <th className="px-4 py-3 font-medium text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.additionalItems.map((item) => (
+                        <tr key={item.id} className="border-t border-border/70">
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            {item.name}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {item.description || item.notes || "-"}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {Number(item.quantity)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {formatCurrency(Number(item.unitPrice))}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {formatCurrency(Number(item.totalAmount))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="px-6 pb-6 print:px-8">
             <div className="rounded-3xl border border-border/70">
@@ -202,20 +249,38 @@ export default async function ReceivablePrintPage({
           <div className="border-t border-border/70 bg-stone-50 px-6 py-6 print:px-8">
             <div className="ml-auto flex max-w-sm flex-col gap-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Total invoice</span>
+                <span className="text-muted-foreground">Total invoice awal</span>
                 <span className="font-medium text-foreground">
-                  {formatCurrency(Number(invoice.totalAmount))}
+                  {formatCurrency(displayAmounts.baseTotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Total tambahan</span>
+                <span className="font-medium text-foreground">
+                  {formatCurrency(displayAmounts.additionalTotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Grand total</span>
+                <span className="font-medium text-foreground">
+                  {formatCurrency(displayAmounts.grandTotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">DP diterima</span>
+                <span className="font-medium text-foreground">
+                  {formatCurrency(Number(invoice.downPayment))}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Sudah dibayar</span>
                 <span className="font-medium text-foreground">
-                  {formatCurrency(Number(invoice.amountPaid))}
+                  {formatCurrency(displayAmounts.amountPaid)}
                 </span>
               </div>
               <div className="flex items-center justify-between border-t border-border/70 pt-3 text-base font-semibold text-foreground">
-                <span>Sisa tagihan</span>
-                <span>{formatCurrency(Number(invoice.outstandingAmount))}</span>
+                <span>Sisa pembayaran</span>
+                <span>{formatCurrency(displayAmounts.outstandingDisplay)}</span>
               </div>
             </div>
           </div>
