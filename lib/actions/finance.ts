@@ -93,6 +93,7 @@ function revalidateFinancePages() {
 
 function revalidateInvoiceDetailPages(invoiceId: string) {
   revalidatePath(`/receivables/${invoiceId}`);
+  revalidatePath(`/receivables/${invoiceId}/edit`);
   revalidatePath(`/receivables/${invoiceId}/print`);
 }
 

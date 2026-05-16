@@ -171,8 +171,6 @@ export function InvoiceForm({
             <Textarea id="notes" placeholder="Opsional" {...form.register("notes")} />
           </div>
 
-          {children}
-
           <ErrorSummary
             errors={form.formState.errors as Record<string, { message?: string } | undefined>}
           />
@@ -187,6 +185,8 @@ export function InvoiceForm({
             </Button>
           </div>
         </form>
+
+        {children}
       </CardContent>
     </Card>
   );
