@@ -56,26 +56,27 @@ export default async function EditReceivablePage({
           brandId: item.brandId,
         }))}
         isLinkedToTransactions={invoice.transactions.length > 0}
-      />
-      <InvoiceAdditionalItemsPanel
-        invoiceId={invoice.id}
-        baseTotal={displayAmounts.baseTotal}
-        additionalTotal={displayAmounts.additionalTotal}
-        grandTotal={displayAmounts.grandTotal}
-        downPayment={Number(invoice.downPayment)}
-        amountPaid={displayAmounts.amountPaid}
-        outstandingDisplay={displayAmounts.outstandingDisplay}
-        items={invoice.additionalItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
-          totalAmount: Number(item.totalAmount),
-          notes: item.notes,
-          createdAt: item.createdAt.toISOString(),
-        }))}
-      />
+      >
+        <InvoiceAdditionalItemsPanel
+          invoiceId={invoice.id}
+          baseTotal={displayAmounts.baseTotal}
+          additionalTotal={displayAmounts.additionalTotal}
+          grandTotal={displayAmounts.grandTotal}
+          downPayment={Number(invoice.downPayment)}
+          amountPaid={displayAmounts.amountPaid}
+          outstandingDisplay={displayAmounts.outstandingDisplay}
+          items={invoice.additionalItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            totalAmount: Number(item.totalAmount),
+            notes: item.notes,
+            createdAt: item.createdAt.toISOString(),
+          }))}
+        />
+      </InvoiceForm>
     </>
   );
 }

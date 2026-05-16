@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { InvoiceAdditionalItemsPanel } from "@/components/receivables/invoice-additional-items-panel";
 import { DeleteButton } from "@/components/shared/delete-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -97,25 +96,6 @@ export default async function ReceivableDetailPage({
         </Card>
       </div>
 
-      <InvoiceAdditionalItemsPanel
-        invoiceId={invoice.id}
-        baseTotal={displayAmounts.baseTotal}
-        additionalTotal={displayAmounts.additionalTotal}
-        grandTotal={displayAmounts.grandTotal}
-        downPayment={Number(invoice.downPayment)}
-        amountPaid={displayAmounts.amountPaid}
-        outstandingDisplay={displayAmounts.outstandingDisplay}
-        items={invoice.additionalItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
-          totalAmount: Number(item.totalAmount),
-          notes: item.notes,
-          createdAt: item.createdAt.toISOString(),
-        }))}
-      />
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { type ReactNode, useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -29,6 +29,7 @@ type InvoiceFormProps = {
   clients: Option[];
   projects: Option[];
   isLinkedToTransactions?: boolean;
+  children?: ReactNode;
 };
 
 export function InvoiceForm({
@@ -38,6 +39,7 @@ export function InvoiceForm({
   clients,
   projects,
   isLinkedToTransactions = false,
+  children,
 }: InvoiceFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -168,6 +170,8 @@ export function InvoiceForm({
             <Label htmlFor="notes">Catatan</Label>
             <Textarea id="notes" placeholder="Opsional" {...form.register("notes")} />
           </div>
+
+          {children}
 
           <ErrorSummary
             errors={form.formState.errors as Record<string, { message?: string } | undefined>}
