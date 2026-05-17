@@ -131,9 +131,9 @@ export default async function ReceivablesPage({
             <TableHead>Brand</TableHead>
             <TableHead>Klien</TableHead>
             <TableHead>Project</TableHead>
-            <TableHead>Total</TableHead>
+            <TableHead>Total tampilan</TableHead>
             <TableHead>DP</TableHead>
-            <TableHead>Sisa</TableHead>
+            <TableHead>Sisa tampilan</TableHead>
             <TableHead>Jatuh tempo</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Aksi</TableHead>

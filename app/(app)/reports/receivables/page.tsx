@@ -94,8 +94,8 @@ export default async function ReceivableReportPage({
             <TableHead>Invoice</TableHead>
             <TableHead>Brand</TableHead>
             <TableHead>Klien</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Outstanding</TableHead>
+            <TableHead>Total tampilan</TableHead>
+            <TableHead>Sisa tampilan</TableHead>
             <TableHead>Due date</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
