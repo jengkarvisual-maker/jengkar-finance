@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentSession } from "@/lib/auth/session";
 import { toCsv } from "@/lib/csv";
+import { getInvoiceDisplayAmounts } from "@/lib/invoice-additional-items";
 import { canAccessFinanceWorkspace } from "@/lib/permissions";
 import { listInvoices } from "@/lib/services/finance";
 
@@ -41,17 +42,23 @@ export async function GET(request: Request) {
   });
 
   const csv = toCsv(
-    receivables.rows.map((row) => ({
-      invoiceNo: row.invoiceNo,
-      invoiceDate: row.invoiceDate.toISOString(),
-      brand: row.brand.name,
-      client: row.client.name,
-      totalAmount: Number(row.totalAmount),
-      amountPaid: Number(row.amountPaid),
-      outstandingAmount: Number(row.outstandingAmount),
-      dueDate: row.dueDate.toISOString(),
-      status: row.status,
-    })),
+    receivables.rows.map((row) => {
+      const displayAmounts = getInvoiceDisplayAmounts(row);
+
+      return {
+        invoiceNo: row.invoiceNo,
+        invoiceDate: row.invoiceDate.toISOString(),
+        brand: row.brand.name,
+        client: row.client.name,
+        baseTotal: displayAmounts.baseTotal,
+        additionalTotal: displayAmounts.additionalTotal,
+        grandTotal: displayAmounts.grandTotal,
+        amountPaid: displayAmounts.amountPaid,
+        outstandingDisplay: displayAmounts.outstandingDisplay,
+        dueDate: row.dueDate.toISOString(),
+        status: row.status,
+      };
+    }),
   );
 
   return new NextResponse(csv, {
