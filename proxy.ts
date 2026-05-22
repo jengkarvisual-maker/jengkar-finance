@@ -7,7 +7,20 @@ const CANONICAL_APP_URL =
 
 function getCanonicalOrigin() {
   try {
-    return new URL(CANONICAL_APP_URL);
+    const normalized = /^https?:\/\//i.test(CANONICAL_APP_URL)
+      ? CANONICAL_APP_URL
+      : `https://${CANONICAL_APP_URL}`;
+    const url = new URL(normalized);
+
+    if (!isLocalHost(url.hostname) && url.port) {
+      url.port = "";
+    }
+
+    url.pathname = "";
+    url.search = "";
+    url.hash = "";
+
+    return url;
   } catch {
     return new URL("https://finance.rumahjengkar.com");
   }
