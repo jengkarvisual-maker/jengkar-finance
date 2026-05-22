@@ -1,11 +1,13 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { DeleteButton } from "@/components/shared/delete-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageSizeSelect } from "@/components/shared/page-size-select";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { QueryFilters } from "@/components/shared/query-filters";
+import { RefreshDataButton } from "@/components/shared/refresh-data-button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -88,6 +90,8 @@ export default async function TransactionsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  noStore();
+
   const user = await requireUser();
   const resolvedSearchParams = await searchParams;
   const filters = readFilters(resolvedSearchParams);
@@ -105,6 +109,16 @@ export default async function TransactionsPage({
   const exportHref = exportQuery
     ? `/api/export/transactions?${exportQuery}`
     : "/api/export/transactions";
+  const hasActiveFilters = Boolean(
+    getSingleValue(resolvedSearchParams.brandId) ||
+      getSingleValue(resolvedSearchParams.status) ||
+      getSingleValue(resolvedSearchParams.category) ||
+      getSingleValue(resolvedSearchParams.query) ||
+      getSingleValue(resolvedSearchParams.q) ||
+      getSingleValue(resolvedSearchParams.search) ||
+      getSingleValue(resolvedSearchParams.from) ||
+      getSingleValue(resolvedSearchParams.to),
+  );
 
   const defaultValues: Record<string, string | undefined> = {
     brandId: getSingleValue(resolvedSearchParams.brandId),
@@ -127,6 +141,12 @@ export default async function TransactionsPage({
         description="Input dan monitor seluruh pemasukan, pengeluaran, DP, pelunasan, biaya produksi, serta pembayaran vendor per brand."
         action={
           <>
+            <RefreshDataButton refreshOnFocus />
+            {hasActiveFilters ? (
+              <Button asChild variant="outline">
+                <Link href="/transactions">Reset filter</Link>
+              </Button>
+            ) : null}
             <Button asChild variant="secondary">
               <Link href={exportHref}>Export CSV</Link>
             </Button>
