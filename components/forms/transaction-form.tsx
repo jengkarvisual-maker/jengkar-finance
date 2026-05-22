@@ -56,6 +56,7 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"success" | "error" | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<TransactionSchema>({
@@ -183,13 +184,20 @@ export function TransactionForm({
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage(null);
+    setMessageTone(null);
     startTransition(async () => {
-      const result = await upsertTransactionAction(values, id);
-      setMessage(result.message);
+      try {
+        const result = await upsertTransactionAction(values, id);
+        setMessage(result.message);
+        setMessageTone(result.ok ? "success" : "error");
 
-      if (result.ok) {
-        router.push("/transactions");
-        router.refresh();
+        if (result.ok) {
+          router.push("/transactions");
+          router.refresh();
+        }
+      } catch {
+        setMessage("Transaksi gagal disimpan. Silakan muat ulang halaman lalu coba lagi.");
+        setMessageTone("error");
       }
     });
   });
@@ -333,7 +341,11 @@ export function TransactionForm({
           <ErrorSummary
             errors={form.formState.errors as Record<string, { message?: string } | undefined>}
           />
-          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+          {message ? (
+            <p className={messageTone === "error" ? "text-sm text-red-600" : "text-sm text-emerald-700"}>
+              {message}
+            </p>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
             <Button type="submit" disabled={isPending}>

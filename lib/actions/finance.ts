@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { revalidatePath } from "next/cache";
 
@@ -51,27 +52,65 @@ function ensureBrandManageAccess(
 
 async function nextNumber(prefix: "TRX" | "INV" | "BILL" | "AST" | "PRJ") {
   const today = new Date();
-  const start = startOfMonth(today);
-  const end = endOfMonth(today);
+  const dateStamp = [
+    today.getFullYear(),
+    `${today.getMonth() + 1}`.padStart(2, "0"),
+    `${today.getDate()}`.padStart(2, "0"),
+  ].join("");
+  const serialPrefix = `${prefix}-${dateStamp}-`;
 
-  const count = await (async () => {
+  const latestNumber = await (async () => {
     switch (prefix) {
-      case "TRX":
-        return prisma.transaction.count({ where: { createdAt: { gte: start, lte: end } } });
-      case "INV":
-        return prisma.invoice.count({ where: { createdAt: { gte: start, lte: end } } });
-      case "BILL":
-        return prisma.vendorBill.count({ where: { createdAt: { gte: start, lte: end } } });
-      case "AST":
-        return prisma.asset.count({ where: { createdAt: { gte: start, lte: end } } });
-      case "PRJ":
-        return prisma.project.count({ where: { createdAt: { gte: start, lte: end } } });
+      case "TRX": {
+        const row = await prisma.transaction.findFirst({
+          where: { transactionNo: { startsWith: serialPrefix } },
+          select: { transactionNo: true },
+          orderBy: { transactionNo: "desc" },
+        });
+        return row?.transactionNo ?? null;
+      }
+      case "INV": {
+        const row = await prisma.invoice.findFirst({
+          where: { invoiceNo: { startsWith: serialPrefix } },
+          select: { invoiceNo: true },
+          orderBy: { invoiceNo: "desc" },
+        });
+        return row?.invoiceNo ?? null;
+      }
+      case "BILL": {
+        const row = await prisma.vendorBill.findFirst({
+          where: { billNo: { startsWith: serialPrefix } },
+          select: { billNo: true },
+          orderBy: { billNo: "desc" },
+        });
+        return row?.billNo ?? null;
+      }
+      case "AST": {
+        const row = await prisma.asset.findFirst({
+          where: { assetCode: { startsWith: serialPrefix } },
+          select: { assetCode: true },
+          orderBy: { assetCode: "desc" },
+        });
+        return row?.assetCode ?? null;
+      }
+      case "PRJ": {
+        const row = await prisma.project.findFirst({
+          where: { projectCode: { startsWith: serialPrefix } },
+          select: { projectCode: true },
+          orderBy: { projectCode: "desc" },
+        });
+        return row?.projectCode ?? null;
+      }
       default:
-        return 0;
+        return null;
     }
   })();
 
-  return serialNumber(prefix, today, count + 1);
+  const latestSequence = latestNumber
+    ? Number(latestNumber.split("-").at(-1) ?? "0")
+    : 0;
+
+  return serialNumber(prefix, today, latestSequence + 1);
 }
 
 function revalidateFinancePages() {
@@ -340,51 +379,86 @@ export async function upsertTransactionAction(
     updatedById: user.id,
   };
 
-  const transaction = id
-    ? await prisma.transaction.update({
-        where: { id },
-        data: payload,
-      })
-    : await prisma.transaction.create({
-        data: {
-          ...payload,
-          transactionNo: await nextNumber("TRX"),
-          enteredById: user.id,
-        },
-      });
+  try {
+    const transaction = id
+      ? await prisma.transaction.update({
+          where: { id },
+          data: payload,
+        })
+      : await prisma.transaction.create({
+          data: {
+            ...payload,
+            transactionNo: await nextNumber("TRX"),
+            enteredById: user.id,
+          },
+        });
 
-  const relatedIds = new Set<string>();
-  [previous?.invoiceId, transaction.invoiceId].filter(Boolean).forEach((value) => relatedIds.add(value!));
-  const relatedBillIds = new Set<string>();
-  [previous?.vendorBillId, transaction.vendorBillId]
-    .filter(Boolean)
-    .forEach((value) => relatedBillIds.add(value!));
-  const relatedProjectIds = new Set<string>();
-  [previous?.projectId, transaction.projectId].filter(Boolean).forEach((value) => relatedProjectIds.add(value!));
+    const relatedIds = new Set<string>();
+    [previous?.invoiceId, transaction.invoiceId].filter(Boolean).forEach((value) => relatedIds.add(value!));
+    const relatedBillIds = new Set<string>();
+    [previous?.vendorBillId, transaction.vendorBillId]
+      .filter(Boolean)
+      .forEach((value) => relatedBillIds.add(value!));
+    const relatedProjectIds = new Set<string>();
+    [previous?.projectId, transaction.projectId].filter(Boolean).forEach((value) => relatedProjectIds.add(value!));
 
-  await Promise.all([
-    ...Array.from(relatedIds).map((invoiceId) => recalculateInvoice(invoiceId)),
-    ...Array.from(relatedBillIds).map((billId) => recalculateVendorBill(billId)),
-    ...Array.from(relatedProjectIds).map((projectId) => recalculateProject(projectId)),
-  ]);
+    await Promise.all([
+      ...Array.from(relatedIds).map((invoiceId) => recalculateInvoice(invoiceId)),
+      ...Array.from(relatedBillIds).map((billId) => recalculateVendorBill(billId)),
+      ...Array.from(relatedProjectIds).map((projectId) => recalculateProject(projectId)),
+    ]);
 
-  await logActivity({
-    action: id ? "UPDATE" : "CREATE",
-    entityType: "Transaction",
-    entityId: transaction.id,
-    description: `${user.name} ${id ? "memperbarui" : "menambahkan"} transaksi ${transaction.transactionNo}.`,
-    userId: user.id,
-    brandId: transaction.brandId,
-  });
+    await logActivity({
+      action: id ? "UPDATE" : "CREATE",
+      entityType: "Transaction",
+      entityId: transaction.id,
+      description: `${user.name} ${id ? "memperbarui" : "menambahkan"} transaksi ${transaction.transactionNo}.`,
+      userId: user.id,
+      brandId: transaction.brandId,
+    });
 
-  revalidateFinancePages();
-  revalidatePath(`/transactions/${transaction.id}`);
+    revalidateFinancePages();
+    revalidatePath(`/transactions/${transaction.id}`);
 
-  return {
-    ok: true,
-    message: "Transaksi berhasil disimpan.",
-    data: { id: transaction.id },
-  };
+    return {
+      ok: true,
+      message: "Transaksi berhasil disimpan.",
+      data: { id: transaction.id },
+    };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return {
+          ok: false,
+          message:
+            "Nomor transaksi bentrok dengan data yang sudah ada. Silakan coba simpan lagi atau muat ulang halaman.",
+        };
+      }
+
+      if (error.code === "P2003") {
+        return {
+          ok: false,
+          message:
+            "Relasi transaksi tidak valid. Pastikan invoice, project, vendor, atau tagihan yang dipilih masih tersedia.",
+        };
+      }
+    }
+
+    console.error("upsertTransactionAction failed", {
+      id: id ?? null,
+      brandId: parsed.data.brandId,
+      transactionType: parsed.data.transactionType,
+      invoiceId: normalizedInvoiceId,
+      vendorBillId: normalizedVendorBillId,
+      projectId: normalizedProjectId,
+      error,
+    });
+
+    return {
+      ok: false,
+      message: "Transaksi gagal disimpan. Silakan cek kembali data yang dipilih lalu coba lagi.",
+    };
+  }
 }
 
 export async function deleteClientAction(id: string): Promise<ActionResult> {
