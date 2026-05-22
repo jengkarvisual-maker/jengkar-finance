@@ -42,6 +42,13 @@ function parseForwardedHostname(
   return candidate.replace(/:\d+$/, "").toLowerCase();
 }
 
+function createRedirect(url: URL) {
+  const response = NextResponse.redirect(url, 307);
+  response.headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  return response;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const canonicalUrl = getCanonicalOrigin();
@@ -60,7 +67,7 @@ export function proxy(request: NextRequest) {
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
       canonicalUrl,
     );
-    return NextResponse.redirect(redirectUrl, 308);
+    return createRedirect(redirectUrl);
   }
 
   if (
@@ -77,11 +84,11 @@ export function proxy(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get("rjf_session")?.value);
 
   if (!hasSession && !isPublic) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return createRedirect(new URL("/login", request.url));
   }
 
   if (hasSession && pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return createRedirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
