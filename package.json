@@ -12,7 +12,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:merge:source": "tsx scripts/merge-finance-source.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",
