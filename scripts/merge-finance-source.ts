@@ -8,6 +8,7 @@ type Mode = "stats" | "dry-run" | "apply" | "export-json";
 type TableConfig = {
   key: string;
   uniqueFields: string[][];
+  treatUniqueMatchAsSatisfied?: boolean;
 };
 
 type Conflict = {
@@ -30,13 +31,13 @@ const TABLES: TableConfig[] = [
   { key: "brand", uniqueFields: [["code"], ["slug"]] },
   { key: "transactionCategory", uniqueFields: [["code"]] },
   { key: "user", uniqueFields: [["email"]] },
-  { key: "userBrandAccess", uniqueFields: [["userId", "brandId"]] },
+  { key: "userBrandAccess", uniqueFields: [["userId", "brandId"]], treatUniqueMatchAsSatisfied: true },
   { key: "client", uniqueFields: [["name", "email", "phone"]] },
   { key: "vendor", uniqueFields: [["name", "email", "phone"]] },
   { key: "paymentMethod", uniqueFields: [["name", "accountName", "accountNo", "isCash"]] },
-  { key: "brandClient", uniqueFields: [["brandId", "clientId"]] },
-  { key: "brandVendor", uniqueFields: [["brandId", "vendorId"]] },
-  { key: "brandPaymentMethod", uniqueFields: [["brandId", "paymentMethodId"]] },
+  { key: "brandClient", uniqueFields: [["brandId", "clientId"]], treatUniqueMatchAsSatisfied: true },
+  { key: "brandVendor", uniqueFields: [["brandId", "vendorId"]], treatUniqueMatchAsSatisfied: true },
+  { key: "brandPaymentMethod", uniqueFields: [["brandId", "paymentMethodId"]], treatUniqueMatchAsSatisfied: true },
   { key: "account", uniqueFields: [["code"]] },
   { key: "project", uniqueFields: [["projectCode"]] },
   { key: "invoice", uniqueFields: [["invoiceNo"]] },
@@ -280,6 +281,7 @@ function findConflicts(
   const conflicts: Conflict[] = [];
   const targetById = new Map(targetRows.map((row) => [String(row.id), row]));
   const missingRows = sourceRows.filter((row) => !targetById.has(String(row.id)));
+  const satisfiedSourceIds = new Set<string>();
 
   for (const fields of table.uniqueFields) {
     const targetBySignature = new Map<string, Record<string, unknown>>();
@@ -294,6 +296,11 @@ function findConflicts(
       const existing = targetBySignature.get(signature);
 
       if (existing && String(existing.id) !== String(row.id)) {
+        if (table.treatUniqueMatchAsSatisfied) {
+          satisfiedSourceIds.add(String(row.id));
+          continue;
+        }
+
         conflicts.push({
           table: table.key,
           sourceId: String(row.id),
@@ -305,7 +312,11 @@ function findConflicts(
     }
   }
 
-  return { conflicts, missingRows };
+  return {
+    conflicts,
+    missingRows: missingRows.filter((row) => !satisfiedSourceIds.has(String(row.id))),
+    satisfiedCount: satisfiedSourceIds.size,
+  };
 }
 
 function serializeReport(value: unknown) {
@@ -413,6 +424,7 @@ async function main() {
     const mergePlan: Array<{ table: string; rows: Array<Record<string, unknown>> }> = [];
     const conflicts: Conflict[] = [];
     const missingSummary: Record<string, number> = {};
+    const satisfiedSummary: Record<string, number> = {};
     const sourceMissingTables: string[] = [];
     const targetMissingTables: string[] = [];
 
@@ -430,18 +442,20 @@ async function main() {
         targetMissingTables.push(table.key);
       }
 
-      const { conflicts: tableConflicts, missingRows } = findConflicts(
+      const { conflicts: tableConflicts, missingRows, satisfiedCount } = findConflicts(
         table,
         sourceResult.rows,
         targetResult.rows,
       );
 
       missingSummary[table.key] = missingRows.length;
+      satisfiedSummary[table.key] = satisfiedCount;
       mergePlan.push({ table: table.key, rows: missingRows });
       conflicts.push(...tableConflicts);
     }
 
     report.missingSummary = missingSummary;
+    report.satisfiedSummary = satisfiedSummary;
     report.conflicts = conflicts;
     report.conflictCount = conflicts.length;
     report.sourceMissingTables = sourceMissingTables;
