@@ -34,10 +34,21 @@ function isLocalHost(hostname: string) {
   );
 }
 
+function parseForwardedHostname(
+  value: string | null | undefined,
+  fallback: string,
+) {
+  const candidate = value?.split(",")[0]?.trim() || fallback;
+  return candidate.replace(/:\d+$/, "").toLowerCase();
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const canonicalUrl = getCanonicalOrigin();
-  const currentHostname = request.nextUrl.hostname.toLowerCase();
+  const currentHostname = parseForwardedHostname(
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+    request.nextUrl.hostname,
+  );
   const canonicalHostname = canonicalUrl.hostname.toLowerCase();
 
   if (
@@ -45,9 +56,10 @@ export function proxy(request: NextRequest) {
     !isLocalHost(currentHostname) &&
     currentHostname !== canonicalHostname
   ) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.protocol = canonicalUrl.protocol;
-    redirectUrl.host = canonicalUrl.host;
+    const redirectUrl = new URL(
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      canonicalUrl,
+    );
     return NextResponse.redirect(redirectUrl, 308);
   }
 
