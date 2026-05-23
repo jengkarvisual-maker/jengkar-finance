@@ -1,4 +1,5 @@
 import { Bebas_Neue } from "next/font/google";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { LoginForm } from "@/components/forms/login-form";
 
@@ -8,6 +9,8 @@ const fontDisplay = Bebas_Neue({
 });
 
 export default function LoginPage() {
+  noStore();
+
   return (
     <main className="page-shell flex min-h-screen items-center justify-center px-4 py-8">
       <section className="w-full max-w-5xl rounded-[36px] border border-border/70 bg-white/80 p-6 soft-shadow md:p-10">
